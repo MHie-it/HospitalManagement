@@ -1,0 +1,18 @@
+-- add folder backend and frontend
+-- cd backend
+-- khỏi tạo ứng dung nodejs
+-- npm init -y 
+-- cài đặt express
+-- npm install express@4.18.2
+-- add server.js nơi khởi tạo app chứa thư mục gốc
+-- run server 
+-- npm run dev
+-- install nodemon để tự động restart server khi có thay đổi
+-- npm  install nodemon -D
+-- cls  = clears
+-- pass = zp8PGp6wv4aob6JG
+-- connect DB 
+mongodb+srv://leminhhiepco_db_user:zp8PGp6wv4aob6JG@cluster0.s2dpa3y.mongodb.net/?appName=Cluster0
+ -- install mongoose
+-- npm install mongoose
+-- npm install dotenv
