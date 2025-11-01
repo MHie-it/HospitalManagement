@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import BacSi from "./BacSi";
+import BacSi from "./BacSi.js";
 
 const licLamViecSchema = new mongoose.Schema (
     {

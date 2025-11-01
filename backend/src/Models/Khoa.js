@@ -8,6 +8,21 @@ const khoaSchema = new mongoose.Schema(
             unique : true,
         },
 
+        email :{
+            type : String ,
+            required : true,
+            unique : true,
+            trim : true,
+            lowercase : true,
+        },
+
+        SDT : {
+            type : String ,
+            required : true,
+            unique : true,
+            match: [/^(0|\+84)[0-9]{9}$/, 'Số điện thoại không hợp lệ']
+        },
+
         moTa: {
             type : String,
             required : true,
