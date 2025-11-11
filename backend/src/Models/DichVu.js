@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import LoaiDichVu from './LoaiDichVu';
+import LoaiDichVu from './LoaiDichVu.js';
 
 const dichVuSchema = new mongoose.Schema(
     {
@@ -16,6 +16,12 @@ const dichVuSchema = new mongoose.Schema(
 
         giaTien : {
             type : Decimal128 ,
+            required : true,
+        },
+
+        Khoa :{
+            type : mongoose.Schema.Types.ObjectId,
+            ref : 'Khoa',
             required : true,
         },
 
