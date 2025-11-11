@@ -1,4 +1,5 @@
-// import Task  from "../../models/Task.js";
+// import Role  from "../../Models/Role.js";
+import Role from "../Models/Role.js";
 
 // export const getAllTasks = async (request, response) => {
 //     try {
@@ -12,21 +13,21 @@
 //     }
 // };
 
-// export const createTask = async (request, response) => {
-//     try {
-//         const {title} = request.body;
+export const createTask = async (request, response) => {
+    try {
+        const {name, description} = request.body;
 
-//         const task = new Task({title});
+        const role = new Role({name, description});
 
-//         const newTask = await task.save();
+        const newRole = await role.save();
 
-//         response.status(201).json(newTask);
-//     } catch (error) {
+        response.status(201).json(newRole);
+    } catch (error) {
         
-//         console.error("Lỗi tạo task", error);
-//         response.status(500).json({ message: "Error server" });
-//     }
-// };
+        console.error("Lỗi tạo task", error);
+        response.status(500).json({ message: "Error server" });
+    }
+};
 
 // export const updateTask = async (request, response) => {
 //     try {

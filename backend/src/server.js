@@ -1,5 +1,5 @@
 import express from 'express';
-// import taskRouter from './Router/taskRouter.js';
+import taskRouter from './Router/taskRouter.js';
 import { connectDB } from './Config/DB.js';
 import dotenv from 'dotenv';
 
@@ -14,7 +14,7 @@ connectDB();
 
 app.use(express.json());
 
-// app.use("/api/tasks",taskRouter);
+app.use("/api/role",taskRouter);
 
 connectDB().then(() =>{
     app.listen(PORT, () => {
