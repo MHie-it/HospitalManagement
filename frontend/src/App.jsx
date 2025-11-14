@@ -17,7 +17,7 @@ function App() {
           element={<LoginPage/>} //component hien thi
         />
         <Route 
-          path="*"  
+          path="/register" //duong dan
           element={<RegisterPage/>}
         />
         {/* setup route */}

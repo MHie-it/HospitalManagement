@@ -19,6 +19,11 @@ const buttonVariants = cva(
         ghost:
           "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
         link: "text-primary underline-offset-4 hover:underline",
+        gmail: "bg-[rgb(173,216,230)] text-white hover:bg-[rgb(144,202,249)] focus-visible:ring-blue-300",
+        gradient: "!bg-[rgb(144,202,249)] text-black hover:shadow-glow hover:scale-105 active:scale-95 boder-0 ",
+        // shadow-glow: them bong
+        // hover:scale-105 phongs to nhe
+        // active:scale-95 thu nho nhe nhe 
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",
