@@ -2,6 +2,7 @@ import {Toaster , toast} from "sonner"
 import {BrowserRouter,Route,Routes} from "react-router"
 import LoginPage from './pages/Login/LoginPage';
 import RegisterPage from './pages/Login/RegisterPage';
+import UserPage from "./pages/User/UserPage";
 
 function App() {
   return (
@@ -14,7 +15,7 @@ function App() {
       <Routes>
         <Route 
           path="/" //duong dan
-          element={<LoginPage/>} //component hien thi
+          element={<UserPage/>} //component hien thi
         />
         <Route 
           path="/register" //duong dan
