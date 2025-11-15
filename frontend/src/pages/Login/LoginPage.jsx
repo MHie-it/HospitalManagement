@@ -3,9 +3,17 @@ import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Mail, MailIcon } from 'lucide-react'
 import React from 'react'
-import { Link } from 'react-router'
+import { Link,useNavigate  } from 'react-router'
+import { toast } from 'sonner'
 
 const LoginPage = () => {
+   const navigate = useNavigate();
+
+  // const checkLogin = () => {
+    
+  //   toast.success("Đăng nhập thành công!");
+  //   navigate("/admin");
+  // };
   return (
     <div className="relative min-h-screen w-screen bg-white overflow-hidden">
       {/* Soft Blue Radial Background */}
@@ -38,7 +46,7 @@ const LoginPage = () => {
             <Input
               type="Password"
               placeholder="Password"
-              className=" mt-4 w-full px-4 pt-2 border border-gray-300 roynder-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className=" mt-4 w-full px-4 pt-2 border border-gray-300 roynder-md focus:outline-none focus:ring-2 focus:ring-blue-500 "
             />
 
 
@@ -55,6 +63,10 @@ const LoginPage = () => {
               variant="gradient"
               size="lg"
               className="w-full mt-4  "
+              onClick ={() => {
+                toast.success("Đăng nhập thành công!");
+                navigate("/admin");
+              }}
             >
               Đăng nhập
             </Button>
