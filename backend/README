@@ -18,25 +18,11 @@ mongodb+srv://leminhhiepco_db_user:zp8PGp6wv4aob6JG@cluster0.s2dpa3y.mongodb.net
 -- npm install dotenv
 
 
-#  màu nền 
-#  <div className="relative min-h-screen w-screen bg-white overflow-hidden">
-#       {/* Soft Blue Radial Background */}
-#       <div
-#         className="absolute inset-0 z-0"
-#         style={{
-#           backgroundImage: `
-#             radial-gradient(circle at top center, rgba(59, 130, 246, 0.5), transparent 70%)
-#           `,
-#           backgroundColor: "#ffffff",
-#         }}
-#       />
+--- cài package 
+-- npm install bcryptjs
+-- này dùng để mã hóa mật khẩu
 
-#       {/* Nội dung chính */}
-#       <div className="relative z-10 flex items-center justify-center min-h-screen">
-#         <div className="w-full max-w-md ">
-#           // code ở đây
 
-#         </div>
+--  install cors 
+npm i cors
 
-#       </div>
-#     </div>

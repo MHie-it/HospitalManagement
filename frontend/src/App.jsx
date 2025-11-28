@@ -4,6 +4,7 @@ import LoginPage from './pages/Login/LoginPage';
 import RegisterPage from './pages/Login/RegisterPage';
 import HomeAdmin from "./pages/Admin/HomeAdmin";
 import DoctorManagement from "./pages/Admin/DoctorManagement";
+import AccountManagement from "./pages/Admin/AccountManagement";
 
 function App() {
   return (
@@ -30,6 +31,10 @@ function App() {
         <Route 
           path="/DoctorManagement" //duong dan
           element={<DoctorManagement/>}
+        />
+        <Route 
+          path="/AccountManagement" //duong dan
+          element={<AccountManagement/>}
         />
         {/* setup route */}
       </Routes>

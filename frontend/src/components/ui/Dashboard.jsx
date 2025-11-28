@@ -27,9 +27,16 @@ const Dashboard = () => {
                 </div>
             </Link>
 
-            <div className="w-full h-12 text-xl text-black hover:bg-blue-300 flex items-center justify-center">
-                Quản lý tài khoản
-            </div>
+            <Link
+                to="/AccountManagement"
+                className="text-inherit no-underline"
+            >
+                <div className="w-full h-12 text-xl text-black hover:bg-blue-300 flex items-center justify-center">
+                    Quản lý tài khoản
+                </div>
+            </Link>
+
+            
             <div className="w-full h-12 text-xl text-black hover:bg-blue-300 flex items-center justify-center">
                 Quản lý dịch vụ
             </div>
