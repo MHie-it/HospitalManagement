@@ -28,13 +28,13 @@ const userSchema  = new mongoose.Schema(
         BacSi: {
             type : mongoose.Schema.Types.ObjectId,
             ref : 'BacSi',
-            required : true,
+            required : false,
         },
 
         NguoiDung: {
             type : mongoose.Schema.Types.ObjectId,
             ref : 'NguoiDung',
-            required : true,
+            required : false,
         },
     },
 

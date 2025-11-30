@@ -2,6 +2,10 @@ import express from 'express';
 import taskRouter from './Router/taskRouter.js';
 import { connectDB } from './Config/DB.js';
 import dotenv from 'dotenv';
+import authRouter from './Router/authRouter.js';
+import khoaRouter from './Router/khoaRouter.js';
+import doctorRouter from './Router/doctorRouter.js';
+import cors from 'cors';
 
 dotenv.config();
 
@@ -14,7 +18,17 @@ connectDB();
 
 app.use(express.json());
 
+//caasu hinhf cors connect fe and be
+app.use(cors({
+  origin: 'http://localhost:5173', 
+  credentials: true
+}));
+
+
 app.use("/api/role",taskRouter);
+app.use("/api/auth",authRouter);
+app.use("/api/khoa",khoaRouter)
+app.use("/api/doctor",doctorRouter);
 
 connectDB().then(() =>{
     app.listen(PORT, () => {
