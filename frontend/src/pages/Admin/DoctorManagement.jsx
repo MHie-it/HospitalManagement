@@ -55,7 +55,7 @@ const DoctorManagement = () => {
                         </Card>
 
                         <Card className="w-1/3 bg-white rounded-lg shadow-lg p-3 m-5" >
-                            <p className="text-xl font-bold "> Doctor</p>
+                            <p className="text-xl font-bold "> Doctor </p>
                             <span> Doctor </span>
                         </Card>
 
