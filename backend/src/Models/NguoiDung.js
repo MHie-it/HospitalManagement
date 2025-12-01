@@ -33,6 +33,7 @@ const nguoiDungSchema = new mongoose.Schema(
 
         gioiTinh :{
             type : String ,
+            required :true,
         },
 
         imgURL :{

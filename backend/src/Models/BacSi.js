@@ -38,6 +38,11 @@ const bacsiSchema = new mongoose.Schema(
         imgURL :{
             type :String,
         },
+        
+        isActive: {
+            type: Boolean,
+            default: true,  // Mặc định là đang hoạt động
+        },
 
         Khoa:{
             type : mongoose.Schema.Types.ObjectId,
