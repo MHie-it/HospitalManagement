@@ -5,6 +5,7 @@ import RegisterPage from './pages/Login/RegisterPage';
 import HomeAdmin from "./pages/Admin/HomeAdmin";
 import DoctorManagement from "./pages/Admin/DoctorManagement";
 import AccountManagement from "./pages/Admin/AccountManagement";
+import UserPage from "./pages/User/UserPage";
 import ServiceManagement from "./pages/Admin/ServiceManagement";
 
 function App() {
@@ -19,7 +20,7 @@ function App() {
       <Routes>
         <Route 
           path="/" //duong dan
-          element={<LoginPage/>} //component hien thi
+          element={<UserPage/>} //component hien thi
         />
         <Route 
           path="/register" //duong dan
