@@ -6,6 +6,7 @@ import HomeAdmin from "./pages/Admin/HomeAdmin";
 import DoctorManagement from "./pages/Admin/DoctorManagement";
 import AccountManagement from "./pages/Admin/AccountManagement";
 import UserPage from "./pages/User/UserPage";
+import ServiceManagement from "./pages/Admin/ServiceManagement";
 
 function App() {
   return (
@@ -36,6 +37,10 @@ function App() {
         <Route 
           path="/AccountManagement" //duong dan
           element={<AccountManagement/>}
+        />
+        <Route 
+          path="/ServiceManagement" //duong dan
+          element={<ServiceManagement/>}
         />
         {/* setup route */}
       </Routes>
