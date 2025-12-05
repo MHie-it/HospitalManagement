@@ -7,6 +7,7 @@ import DoctorManagement from "./pages/Admin/DoctorManagement";
 import AccountManagement from "./pages/Admin/AccountManagement";
 import UserPage from "./pages/User/UserPage";
 import ServiceManagement from "./pages/Admin/ServiceManagement";
+import MedicalDevicesManagement from "./pages/Admin/MedicalDevicesManagement";
 
 function App() {
   return (
@@ -27,6 +28,10 @@ function App() {
           element={<RegisterPage/>}
         />
         <Route 
+          path="/login" //duong dan
+          element={<LoginPage/>}
+        />
+        <Route 
           path="/admin" //duong dan
           element={<HomeAdmin/>}
         />
@@ -41,6 +46,10 @@ function App() {
         <Route 
           path="/ServiceManagement" //duong dan
           element={<ServiceManagement/>}
+        />
+        <Route 
+          path="/MedicalDevicesManagement" //duong dan
+          element={<MedicalDevicesManagement/>}
         />
         {/* setup route */}
       </Routes>
