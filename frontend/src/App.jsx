@@ -14,22 +14,31 @@ function App() {
     <>
       {/* <Toaster/>
       <button onClick={() => toast("hello") }> Toaster</button> */}
-      <Toaster richColors/>
+      <Toaster 
+      richColors
+      position="top-right"
+        toastOptions={{
+          style: {
+            zIndex: 9999
+          }
+        }}
+      />
 
       <BrowserRouter>
     
       <Routes>
         <Route 
           path="/" //duong dan
-          element={<UserPage/>} //component hien thi
+          element={<LoginPage/>} //component hien thi
         />
         <Route 
           path="/register" //duong dan
           element={<RegisterPage/>}
         />
+        
         <Route 
-          path="/login" //duong dan
-          element={<LoginPage/>}
+          path="/userpage" //duong dan
+          element={<UserPage/>} //component hien thi
         />
         <Route 
           path="/admin" //duong dan
