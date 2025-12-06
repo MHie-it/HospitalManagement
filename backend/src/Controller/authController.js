@@ -151,7 +151,7 @@ export const register = async (request, response) => {
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-        const defaultRole = await Role({ name: 'User' });
+        const defaultRole = await Role.findOne({ name: 'User' });
         if (!defaultRole) {
             return response.status(400).json({
                 message: "Không tìm thấy role!"
@@ -222,7 +222,7 @@ export const Login = async (request, response) => {
             });
         }
 
-        if (User.isActive === false) {
+        if (user.isActive === false) {
             return response.status(400).json({
                 message: "Tài khoản ngừng hoạt động!"
             });
