@@ -6,6 +6,7 @@ import HomeAdmin from "./pages/Admin/HomeAdmin";
 import DoctorManagement from "./pages/Admin/DoctorManagement";
 import AccountManagement from "./pages/Admin/AccountManagement";
 import UserPage from "./pages/User/UserPage";
+import DatLichKham from "./pages/User/DatLichKham";
 import ServiceManagement from "./pages/Admin/ServiceManagement";
 import MedicalDevicesManagement from "./pages/Admin/MedicalDevicesManagement";
 
@@ -22,6 +23,10 @@ function App() {
         <Route 
           path="/" //duong dan
           element={<UserPage/>} //component hien thi
+        />
+        <Route 
+          path="/dat-lich-kham" //duong dan
+          element={<DatLichKham/>}
         />
         <Route 
           path="/register" //duong dan
