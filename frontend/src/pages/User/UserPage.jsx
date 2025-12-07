@@ -190,7 +190,7 @@ const UserPage = () => {
     toast.success('Đăng xuất thành công!');
     
     // Chuyển hướng về trang login
-    navigate('/login');
+    navigate('/');
   };
 
   // Handler để scroll đến phần thông tin
