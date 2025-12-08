@@ -9,6 +9,7 @@ import UserPage from "./pages/User/UserPage";
 import DatLichKham from "./pages/User/DatLichKham";
 import ServiceManagement from "./pages/Admin/ServiceManagement";
 import MedicalDevicesManagement from "./pages/Admin/MedicalDevicesManagement";
+import FindDoctor from "./pages/Doctor/FindDoctor";
 
 function App() {
   return (
@@ -64,6 +65,13 @@ function App() {
         <Route 
           path="/MedicalDevicesManagement" //duong dan
           element={<MedicalDevicesManagement/>}
+        />
+
+        {/* doctor */}
+
+        <Route 
+          path="/doctorhome" //duong dan
+          element={<FindDoctor/>}
         />
         {/* setup route */}
       </Routes>
