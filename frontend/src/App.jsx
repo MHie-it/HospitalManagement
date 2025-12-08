@@ -6,8 +6,10 @@ import HomeAdmin from "./pages/Admin/HomeAdmin";
 import DoctorManagement from "./pages/Admin/DoctorManagement";
 import AccountManagement from "./pages/Admin/AccountManagement";
 import UserPage from "./pages/User/UserPage";
+import DatLichKham from "./pages/User/DatLichKham";
 import ServiceManagement from "./pages/Admin/ServiceManagement";
 import MedicalDevicesManagement from "./pages/Admin/MedicalDevicesManagement";
+import FindDoctor from "./pages/Doctor/FindDoctor";
 
 function App() {
   return (
@@ -30,6 +32,10 @@ function App() {
         <Route 
           path="/" //duong dan
           element={<LoginPage/>} //component hien thi
+        />
+        <Route 
+          path="/dat-lich-kham" //duong dan
+          element={<DatLichKham/>}
         />
         <Route 
           path="/register" //duong dan
@@ -59,6 +65,13 @@ function App() {
         <Route 
           path="/MedicalDevicesManagement" //duong dan
           element={<MedicalDevicesManagement/>}
+        />
+
+        {/* doctor */}
+
+        <Route 
+          path="/doctorhome" //duong dan
+          element={<FindDoctor/>}
         />
         {/* setup route */}
       </Routes>
