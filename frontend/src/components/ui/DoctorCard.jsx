@@ -1,6 +1,6 @@
 ﻿// src/pages/components/DoctorCard.jsx
 
-import React from 'react';
+import React ,{useState}from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const DoctorCard = ({ doctor }) => {
@@ -9,14 +9,14 @@ const DoctorCard = ({ doctor }) => {
     // 1. Chức năng Đặt lịch hẹn (Điều hướng thực tế)
     const handleBookAppointment = () => {
         // Điều hướng đến trang đặt lịch (Route: /book/:id)
-        navigate(`/book/${doctor.id}`);
+      //  navigate(`/book/${doctor.id}`);
         console.log(`Đã điều hướng đến trang đặt lịch cho bác sĩ ID: ${doctor.id}`);
     };
 
     // 2. Chức năng Xem chi tiết hồ sơ công khai (Điều hướng thực tế)
     const handleViewDetails = () => {
         // Điều hướng đến trang hồ sơ công khai bác sĩ (Route: /doctor/:id)
-        navigate(`/doctor/${doctor.id}`);
+      //  navigate(`/doctor/${doctor.id}`);
         console.log(`Đã điều hướng đến trang hồ sơ công khai bác sĩ ID: ${doctor.id}`);
     };
 

@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Mail, MailIcon } from 'lucide-react'
-import React ,{ useState } from 'react'
+import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { authService } from '@/services/authService'
@@ -31,12 +31,19 @@ const LoginPage = () => {
         // Lưu thông tin user vào localStorage
         localStorage.setItem('user', JSON.stringify(response.user));
         localStorage.setItem('token', response.token || 'temp-token'); // Nếu có JWT token
-
+        
         toast.success(response.message || "Đăng nhập thành công!");
 
-        // Điều hướng dựa trên role
-        // Bạn có thể kiểm tra role để điều hướng đến trang phù hợp
-        navigate("/admin");
+        const userType = response.user.userType;
+        if (userType === 'User') {
+          navigate("/userpage");
+        } else if (userType === 'Doctor') {
+          navigate("/doctorhome");
+        } else if (userType === 'Admin') {
+          navigate("/admin");
+        }
+
+
       }
     } catch (error) {
       // Hiển thị lỗi từ server
