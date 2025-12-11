@@ -26,6 +26,42 @@ export const getAllDoctors = async (request, response) => {
     }
 };
 
+export const getDoctorsByKhoa = async (request, response) => {
+    try {
+        const { khoaId } = request.params;
+
+        if (khoaId && !khoaId.match(/^[0-9a-fA-F]{24}$/)) {
+            return response.status(400).json({
+                message: "Id khoa không hợp lệ !"
+            });
+        }
+
+        const khoa = await Khoa.findById(khoaId);
+        if (!khoa) {
+            return response.status(404).json({
+                message: "Không tìm thấy khoa !"
+            });
+        }
+
+        const doctors = await BacSi.find({ Khoa: khoaId })
+            .select('-__v')
+            .populate('Khoa', 'tenKhoa')
+            .sort({ createdAt: -1 });
+
+        response.status(200).json({
+            message: "Lấy danh sách bác sĩ theo khoa thành công!",
+            data: doctors,
+            count: doctors.length
+        });
+
+    } catch (error) {
+        console.error(error);
+        response.status(500).json({
+            message: "Lỗi khi lấy danh sách bác sĩ theo khoa!"
+        });
+    }
+};
+
 
 export const getDoctorID = async (request, response) => {
     try {

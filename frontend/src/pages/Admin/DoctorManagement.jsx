@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Backgound from '@/components/ui/Backgound'
 import Dashboard from '@/components/ui/Dashboard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -6,121 +6,20 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Search, Plus, Edit, Trash2, X, Users, Building2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { khoaService } from '@/services/khoaService'
+import { doctorService } from '@/services/doctorService'
 
 const DoctorManagement = () => {
-    // Dữ liệu cứng - Danh sách khoa
-    const [khoaList, setKhoaList] = useState([
-        {
-            _id: "1",
-            tenKhoa: "Khoa Nội",
-            email: "khoanoi@hospital.com",
-            SDT: "0987654321",
-            moTa: "Khoa điều trị các bệnh nội khoa",
-            status: "active",
-            isActive: true,
-            createdAt: new Date("2024-01-15T15:30:14"),
-        },
-        {
-            _id: "2",
-            tenKhoa: "Khoa Ngoại",
-            email: "khoangoai@hospital.com",
-            SDT: "0987654322",
-            moTa: "Khoa phẫu thuật ngoại khoa",
-            status: "active",
-            isActive: true,
-            createdAt: new Date("2024-01-16T10:20:00"),
-        },
-        {
-            _id: "3",
-            tenKhoa: "Khoa Nhi",
-            email: "khoanhi@hospital.com",
-            SDT: "0987654323",
-            moTa: "Khoa điều trị bệnh nhi",
-            status: "active",
-            isActive: true,
-            createdAt: new Date("2024-01-17T14:15:30"),
-        },
-        {
-            _id: "4",
-            tenKhoa: "Khoa Sản",
-            email: "khoasan@hospital.com",
-            SDT: "0987654324",
-            moTa: "Khoa sản phụ khoa",
-            status: "active",
-            isActive: true,
-            createdAt: new Date("2024-01-18T09:00:00"),
-        },
-    ])
+    const [khoaList, setKhoaList] = useState([])
 
-    // Dữ liệu cứng - Danh sách bác sĩ
-    const [bacSiList] = useState([
-        {
-            _id: "bs1",
-            tenBS: "Nguyễn Văn A",
-            email: "bsnoi01@hospital.com",
-            SDT: "0912345678",
-            ngaySinh: "1980-05-15",
-            diaChi: "123 Đường ABC, Quận 1, TP.HCM",
-            gioiTinh: "Nam",
-            Khoa: "1",
-            isActive: true,
-        },
-        {
-            _id: "bs2",
-            tenBS: "Trần Thị B",
-            email: "bsnoi02@hospital.com",
-            SDT: "0912345679",
-            ngaySinh: "1985-08-20",
-            diaChi: "456 Đường XYZ, Quận 2, TP.HCM",
-            gioiTinh: "Nữ",
-            Khoa: "1",
-            isActive: true,
-        },
-        {
-            _id: "bs3",
-            tenBS: "Lê Văn C",
-            email: "bsngoai01@hospital.com",
-            SDT: "0912345680",
-            ngaySinh: "1978-12-10",
-            diaChi: "789 Đường DEF, Quận 3, TP.HCM",
-            gioiTinh: "Nam",
-            Khoa: "2",
-            isActive: true,
-        },
-        {
-            _id: "bs4",
-            tenBS: "Phạm Thị D",
-            email: "bsngoai02@hospital.com",
-            SDT: "0912345681",
-            ngaySinh: "1982-03-25",
-            diaChi: "321 Đường GHI, Quận 4, TP.HCM",
-            gioiTinh: "Nữ",
-            Khoa: "2",
-            isActive: true,
-        },
-        {
-            _id: "bs5",
-            tenBS: "Hoàng Văn E",
-            email: "bsnhi01@hospital.com",
-            SDT: "0912345682",
-            ngaySinh: "1987-07-30",
-            diaChi: "654 Đường JKL, Quận 5, TP.HCM",
-            gioiTinh: "Nam",
-            Khoa: "3",
-            isActive: true,
-        },
-        {
-            _id: "bs6",
-            tenBS: "Võ Thị F",
-            email: "bsan01@hospital.com",
-            SDT: "0912345683",
-            ngaySinh: "1983-11-15",
-            diaChi: "987 Đường MNO, Quận 6, TP.HCM",
-            gioiTinh: "Nữ",
-            Khoa: "4",
-            isActive: true,
-        },
-    ])
+    const [loading, setLoading] = useState(false)
+
+    const [error, setError] = useState(null)
+
+
+
+    const [bacSiList, setBacSiList] = useState([])
+    const [loadingDoctors, setLoadingDoctors] = useState(false)
 
     // State
     const [searchTerm, setSearchTerm] = useState('')
@@ -134,6 +33,71 @@ const DoctorManagement = () => {
         moTa: ''
     })
 
+    useEffect(() => {
+        fetchKhoaList()
+        fetchAllDoctors()
+    }, [])
+
+    const fetchAllDoctors = async () => {
+        try {
+            const data = await doctorService.getAllDoctors()
+
+            if (data && data.data) {
+                setBacSiList(data.data)
+            } else if (Array.isArray(data)) {
+                setBacSiList(data)
+            } else {
+                setBacSiList([])
+            }
+        } catch (error) {
+            console.error('Lỗi khi lấy danh sách bác sĩ:', error)
+            toast.error(error.message || 'Không thể tải danh sách bác sĩ')
+        }
+    }
+
+
+    // const fetchDoctorsByKhoa = async (khoaId) => {
+    //     setLoadingDoctors(true)
+    //     try {
+    //         const doctors = await doctorService.getDoctorsByKhoa(khoaId)
+    //         return doctors
+    //     } catch (error) {
+    //         console.error('Lỗi khi lấy danh sách bác sĩ theo khoa:', error)
+    //         toast.error(error.message || 'Không thể tải danh sách bác sĩ')
+    //         return []
+    //     } finally {
+    //         setLoadingDoctors(false)
+    //     }
+    // }
+
+    const fetchKhoaList = async () => {
+        setLoading(true)
+        setError(null)
+
+        try {
+            const data = await khoaService.getAllKhoa()
+
+            if (Array.isArray(data)) {
+                setKhoaList(data)
+            }
+            else if (data.data) {
+                setKhoaList(data.data)
+            }
+            else if (data.khoa) {
+                setKhoaList(data.khoa)
+            }
+            else {
+                setKhoaList([])
+            }
+        } catch (error) {
+            console.error('Lỗi khi lấy danh sách khoa:', error)
+            setError(error.message || 'Không thể tải danh sách khoa')
+            toast.error(error.message || 'Không thể tải danh sách khoa')
+        } finally {
+            setLoading(false)
+        }
+    }
+
     // Lọc khoa theo từ khóa tìm kiếm
     const filteredKhoa = khoaList.filter(khoa =>
         khoa.tenKhoa.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -143,7 +107,10 @@ const DoctorManagement = () => {
 
     // Lấy danh sách bác sĩ của khoa được chọn
     const doctorsOfSelectedKhoa = selectedKhoa
-        ? bacSiList.filter(bacSi => bacSi.Khoa === selectedKhoa._id)
+        ? bacSiList.filter(bacSi => {
+            const khoaId = bacSi.Khoa?._id || bacSi.Khoa
+            return khoaId === selectedKhoa._id
+        })
         : []
 
     // Hàm xử lý click vào khoa
@@ -151,6 +118,7 @@ const DoctorManagement = () => {
         setSelectedKhoa(khoa)
         setShowAddKhoaForm(false)
         setEditingKhoa(null)
+
     }
 
     // Hàm mở form thêm khoa
@@ -181,96 +149,102 @@ const DoctorManagement = () => {
     }
 
     // Hàm lưu khoa (thêm hoặc sửa)
-    const handleSaveKhoa = () => {
-        // Validation
+    const handleSaveKhoa = async () => {  // Thêm async
+        // Validation giữ nguyên
         if (!khoaFormData.tenKhoa || !khoaFormData.email || !khoaFormData.SDT || !khoaFormData.moTa) {
             toast.error('Vui lòng nhập đầy đủ thông tin!')
             return
         }
 
-        // Kiểm tra email hợp lệ
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
         if (!emailRegex.test(khoaFormData.email)) {
             toast.error('Email không hợp lệ!')
             return
         }
 
-        // Kiểm tra số điện thoại hợp lệ
         const phoneRegex = /^(0|\+84)[0-9]{9}$/
         if (!phoneRegex.test(khoaFormData.SDT)) {
             toast.error('Số điện thoại không hợp lệ!')
             return
         }
 
-        // Kiểm tra tên khoa đã tồn tại (trừ khi đang sửa chính khoa đó)
         if (khoaList.some(k => k.tenKhoa === khoaFormData.tenKhoa && k._id !== editingKhoa?._id)) {
             toast.error('Tên khoa đã tồn tại!')
             return
         }
 
-        // Kiểm tra email đã tồn tại
         if (khoaList.some(k => k.email === khoaFormData.email && k._id !== editingKhoa?._id)) {
             toast.error('Email đã tồn tại!')
             return
         }
 
-        if (editingKhoa) {
-            // Sửa khoa
-            setKhoaList(khoaList.map(khoa =>
-                khoa._id === editingKhoa._id
-                    ? {
-                        ...khoa,
-                        tenKhoa: khoaFormData.tenKhoa,
-                        email: khoaFormData.email,
-                        SDT: khoaFormData.SDT,
-                        moTa: khoaFormData.moTa
-                    }
-                    : khoa
-            ))
-            toast.success('Cập nhật khoa thành công!')
-        } else {
-            // Thêm khoa mới
-            const newKhoa = {
-                _id: (khoaList.length > 0 ? Math.max(...khoaList.map(k => parseInt(k._id))) + 1 : 1).toString(),
-                tenKhoa: khoaFormData.tenKhoa,
-                email: khoaFormData.email,
-                SDT: khoaFormData.SDT,
-                moTa: khoaFormData.moTa,
-                status: "active",
-                isActive: true,
-                createdAt: new Date()
+        try {
+            if (editingKhoa) {
+                // ✅ Gọi API để cập nhật
+                await khoaService.updateKhoa(editingKhoa._id, khoaFormData)
+                toast.success('Cập nhật khoa thành công!')
+            } else {
+                // ✅ Gọi API để tạo mới
+                await khoaService.createKhoa(khoaFormData)
+                toast.success('Thêm khoa thành công!')
             }
-            setKhoaList([...khoaList, newKhoa])
-            toast.success('Thêm khoa thành công!')
+
+            await fetchKhoaList()
+
+            // Reset form
+            setKhoaFormData({
+                tenKhoa: '',
+                email: '',
+                SDT: '',
+                moTa: ''
+            })
+            setShowAddKhoaForm(false)
+            setEditingKhoa(null)
+        } catch (error) {
+            console.error('Lỗi khi lưu khoa:', error)
+            toast.error(error.message || 'Có lỗi xảy ra khi lưu khoa')
         }
-
-        // Reset form
-        setKhoaFormData({
-            tenKhoa: '',
-            email: '',
-            SDT: '',
-            moTa: ''
-        })
-        setShowAddKhoaForm(false)
-        setEditingKhoa(null)
     }
-
+    
     // Hàm xóa khoa
-    const handleDeleteKhoa = (khoa, e) => {
-        e.stopPropagation() // Ngăn chặn sự kiện click lan ra card
+    const handleDeleteKhoa = async (khoa, e) => {  // Thêm async
+        e.stopPropagation()
         if (window.confirm(`Bạn có chắc chắn muốn xóa khoa "${khoa.tenKhoa}"?`)) {
-            // Kiểm tra xem khoa có bác sĩ không
-            const hasDoctors = bacSiList.some(bs => bs.Khoa === khoa._id)
-            if (hasDoctors) {
-                toast.error('Không thể xóa khoa đang có bác sĩ!')
-                return
-            }
+            try {
+                // ✅ Reload danh sách bác sĩ để đảm bảo dữ liệu mới nhất
+                await fetchAllDoctors()
 
-            setKhoaList(khoaList.filter(k => k._id !== khoa._id))
-            if (selectedKhoa && selectedKhoa._id === khoa._id) {
-                setSelectedKhoa(null)
+                // ✅ Kiểm tra bác sĩ sau khi reload
+                const hasDoctors = bacSiList.some(bs => {
+                    const khoaId = bs.Khoa?._id || bs.Khoa
+                    return khoaId === khoa._id
+                })
+
+                if (hasDoctors) {
+                    toast.error('Không thể xóa khoa đang có bác sĩ!')
+                    return
+                }
+
+                // ✅ Gọi API xóa khoa
+                await khoaService.deleteKhoa(khoa._id)
+                toast.success(`Đã xóa khoa "${khoa.tenKhoa}"`)
+
+                // ✅ Reload danh sách khoa
+                await fetchKhoaList()
+
+                // ✅ Reload lại danh sách bác sĩ
+                await fetchAllDoctors()
+
+                // ✅ Reset selectedKhoa nếu đang chọn khoa bị xóa
+                if (selectedKhoa && selectedKhoa._id === khoa._id) {
+                    setSelectedKhoa(null)
+                }
+            } catch (error) {
+                console.error('Lỗi khi xóa khoa:', error)
+                // ✅ Hiển thị message từ backend nếu có
+                const errorMessage = error.message || error.data?.message || 'Có lỗi xảy ra khi xóa khoa'
+                toast.error(errorMessage)
             }
-            toast.success(`Đã xóa khoa "${khoa.tenKhoa}"`)
         }
     }
 
@@ -375,8 +349,8 @@ const DoctorManagement = () => {
                                                 <Card
                                                     key={khoa._id}
                                                     className={`p-4 cursor-pointer transition-all hover:shadow-lg ${selectedKhoa && selectedKhoa._id === khoa._id
-                                                            ? 'border-blue-500 bg-blue-50'
-                                                            : 'hover:border-gray-300'
+                                                        ? 'border-blue-500 bg-blue-50'
+                                                        : 'hover:border-gray-300'
                                                         }`}
                                                     onClick={() => handleKhoaClick(khoa)}
                                                 >
@@ -550,8 +524,8 @@ const DoctorManagement = () => {
                                                                     <div className="mt-2">
                                                                         <span
                                                                             className={`px-2 py-1 rounded text-xs font-medium ${bacSi.isActive
-                                                                                    ? 'bg-green-100 text-green-800'
-                                                                                    : 'bg-gray-100 text-gray-800'
+                                                                                ? 'bg-green-100 text-green-800'
+                                                                                : 'bg-gray-100 text-gray-800'
                                                                                 }`}
                                                                         >
                                                                             {bacSi.isActive ? 'Hoạt động' : 'Không hoạt động'}
