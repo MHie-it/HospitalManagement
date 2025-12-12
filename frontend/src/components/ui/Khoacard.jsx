@@ -3,8 +3,9 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Calendar, SquarePen, Trash2, CheckCircle2, Circle } from "lucide-react";
+import { khoaService } from "@/services/khoaService";
 
-const Khoacard = ({ khoa, index }) => {
+const Khoacard = ({ khoa, index, onDelete }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(khoa?.tenKhoa || "");
 
@@ -99,7 +100,19 @@ const Khoacard = ({ khoa, index }) => {
             variant="ghost"
             size="icon"
             className="size-8 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"
-            onClick={() => alert("Xóa khoa: " + khoa.tenKhoa)}
+            onClick={async (e) => {
+              e.stopPropagation();
+              if (window.confirm(`Bạn có chắc chắn muốn xóa khoa "${khoa.tenKhoa}"?`)) {
+                try {
+                  await khoaService.deleteKhoa(khoa._id);
+                  toast.success(`Đã xóa khoa "${khoa.tenKhoa}"`);
+                  if (onDelete) onDelete(khoa._id); // Gọi callback để reload danh sách
+                } catch (error) {
+                  const errorMessage = error.response?.data?.message || error.message || 'Có lỗi xảy ra khi xóa khoa';
+                  toast.error(errorMessage);
+                }
+              }
+            }}
           >
             <Trash2 className="size-4" />
           </Button>

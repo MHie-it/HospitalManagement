@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Search, Plus, Ban, CheckCircle, XCircle, Filter, X } from 'lucide-react'
 import { toast } from 'sonner'
 
+
+
 const AccountManagement = () => {
   // Dữ liệu cứng - Danh sách tài khoản
   const [accounts, setAccounts] = useState([
@@ -100,7 +102,7 @@ const AccountManagement = () => {
 
   // Lọc danh sách tài khoản
   const filteredAccounts = accounts.filter(account => {
-    const matchSearch = 
+    const matchSearch =
       account.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
       account.hoTen.toLowerCase().includes(searchTerm.toLowerCase()) ||
       account.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -108,7 +110,7 @@ const AccountManagement = () => {
 
     const matchKhoa = filterKhoa === 'all' || account.khoaId === filterKhoa
     const matchRole = filterRole === 'all' || account.role === filterRole
-    const matchStatus = filterStatus === 'all' || 
+    const matchStatus = filterStatus === 'all' ||
       (filterStatus === 'active' && account.isActive) ||
       (filterStatus === 'inactive' && !account.isActive)
 
@@ -116,9 +118,10 @@ const AccountManagement = () => {
   })
 
   // Hàm thêm tài khoản mới
+    // Hàm thêm tài khoản mới
   const handleAddAccount = () => {
     // Validation
-    if (!newAccount.username || !newAccount.hoTen || !newAccount.email || !newAccount.SDT) {
+    if (!newAccount.username || !newAccount.tenBS || !newAccount.email || !newAccount.SDT || !newAccount.ngaySinh || !newAccount.diaChi) {
       toast.error('Vui lòng nhập đầy đủ thông tin!')
       return
     }
@@ -148,17 +151,21 @@ const AccountManagement = () => {
     }
 
     // Tìm tên khoa
-    const khoa = khoaList.find(k => k.id === newAccount.khoaId)
+    const khoa = khoaList.find(k => k._id === newAccount.khoaId || k.id === newAccount.khoaId)
     const khoaName = khoa ? khoa.tenKhoa : '-'
 
     // Thêm tài khoản mới
     const accountToAdd = {
       id: accounts.length + 1,
       username: newAccount.username,
-      hoTen: newAccount.hoTen,
+      hoTen: newAccount.tenBS, // Giữ hoTen cho hiển thị
+      tenBS: newAccount.tenBS,
       email: newAccount.email,
       SDT: newAccount.SDT,
-      role: newAccount.role,
+      ngaySinh: newAccount.ngaySinh,
+      diaChi: newAccount.diaChi,
+      gioiTinh: newAccount.gioiTinh,
+      role: newAccount.role || 'User',
       khoa: khoaName,
       khoaId: newAccount.khoaId || null,
       isActive: true,
@@ -167,14 +174,16 @@ const AccountManagement = () => {
 
     setAccounts([...accounts, accountToAdd])
     toast.success('Thêm tài khoản thành công!')
-    
+
     // Reset form và đóng form
     setNewAccount({
       username: '',
-      hoTen: '',
+      tenBS: '',
       email: '',
       SDT: '',
-      role: 'User',
+      ngaySinh: '',
+      diaChi: '',
+      gioiTinh: 'Nam',
       khoaId: '',
       password: ''
     })
@@ -185,13 +194,13 @@ const AccountManagement = () => {
   const handleToggleActive = (id) => {
     const account = accounts.find(acc => acc.id === id)
     const newStatus = !account.isActive
-    
-    setAccounts(accounts.map(account => 
-      account.id === id 
+
+    setAccounts(accounts.map(account =>
+      account.id === id
         ? { ...account, isActive: newStatus }
         : account
     ))
-    
+
     if (newStatus) {
       toast.success(`Đã kích hoạt tài khoản ${account.username}`)
     } else {
@@ -209,8 +218,8 @@ const AccountManagement = () => {
 
         {/* Main Content */}
         <div className="flex-1 p-6 overflow-auto">
-          <Card className="h-full">
-            <CardHeader>
+          <Card className="h-full max-h-full overflow-hidden flex flex-col">
+            <CardHeader >
               <div className="flex justify-between items-center">
                 <div>
                   <CardTitle className="text-2xl font-bold text-gray-800">
@@ -220,8 +229,8 @@ const AccountManagement = () => {
                     Quản lý và theo dõi tất cả tài khoản trong hệ thống
                   </p>
                 </div>
-                <Button 
-                  variant="gradient" 
+                <Button
+                  variant="gradient"
                   className="flex items-center gap-2"
                   onClick={() => setShowAddForm(!showAddForm)}
                 >
@@ -231,8 +240,9 @@ const AccountManagement = () => {
               </div>
             </CardHeader>
 
-            <CardContent>
+            <CardContent >
               {/* Form thêm tài khoản - Hiển thị/ẩn đơn giản (không dùng Dialog) */}
+
               {showAddForm && (
                 <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
                   <div className="flex justify-between items-center mb-4">
@@ -255,17 +265,17 @@ const AccountManagement = () => {
                         <Input
                           placeholder="Nhập username"
                           value={newAccount.username}
-                          onChange={(e) => setNewAccount({...newAccount, username: e.target.value})}
+                          onChange={(e) => setNewAccount({ ...newAccount, username: e.target.value })}
                         />
                       </div>
                       <div>
                         <label className="text-sm font-medium mb-2 block">
-                          Họ tên <span className="text-red-500">*</span>
+                          Tên bác sĩ <span className="text-red-500">*</span>
                         </label>
                         <Input
-                          placeholder="Nhập họ tên"
-                          value={newAccount.hoTen}
-                          onChange={(e) => setNewAccount({...newAccount, hoTen: e.target.value})}
+                          placeholder="Nhập tên bác sĩ"
+                          value={newAccount.tenBS}
+                          onChange={(e) => setNewAccount({ ...newAccount, tenBS: e.target.value })}
                         />
                       </div>
                     </div>
@@ -278,7 +288,7 @@ const AccountManagement = () => {
                           type="email"
                           placeholder="Nhập email"
                           value={newAccount.email}
-                          onChange={(e) => setNewAccount({...newAccount, email: e.target.value})}
+                          onChange={(e) => setNewAccount({ ...newAccount, email: e.target.value })}
                         />
                       </div>
                       <div>
@@ -288,9 +298,44 @@ const AccountManagement = () => {
                         <Input
                           placeholder="Nhập số điện thoại"
                           value={newAccount.SDT}
-                          onChange={(e) => setNewAccount({...newAccount, SDT: e.target.value})}
+                          onChange={(e) => setNewAccount({ ...newAccount, SDT: e.target.value })}
                         />
                       </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">
+                          Ngày sinh <span className="text-red-500">*</span>
+                        </label>
+                        <Input
+                          type="date"
+                          value={newAccount.ngaySinh}
+                          onChange={(e) => setNewAccount({ ...newAccount, ngaySinh: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">
+                          Giới tính <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          value={newAccount.gioiTinh}
+                          onChange={(e) => setNewAccount({ ...newAccount, gioiTinh: e.target.value })}
+                        >
+                          <option value="Nam">Nam</option>
+                          <option value="Nữ">Nữ</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">
+                        Địa chỉ <span className="text-red-500">*</span>
+                      </label>
+                      <Input
+                        placeholder="Nhập địa chỉ"
+                        value={newAccount.diaChi}
+                        onChange={(e) => setNewAccount({ ...newAccount, diaChi: e.target.value })}
+                      />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -299,8 +344,8 @@ const AccountManagement = () => {
                         </label>
                         <select
                           className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          value={newAccount.role}
-                          onChange={(e) => setNewAccount({...newAccount, role: e.target.value, khoaId: e.target.value !== 'Doctor' ? '' : newAccount.khoaId})}
+                          value={newAccount.role || 'User'}
+                          onChange={(e) => setNewAccount({ ...newAccount, role: e.target.value, khoaId: e.target.value !== 'Doctor' ? '' : newAccount.khoaId })}
                         >
                           <option value="User">User</option>
                           <option value="Doctor">Doctor</option>
@@ -315,11 +360,13 @@ const AccountManagement = () => {
                           <select
                             className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             value={newAccount.khoaId}
-                            onChange={(e) => setNewAccount({...newAccount, khoaId: e.target.value})}
+                            onChange={(e) => setNewAccount({ ...newAccount, khoaId: e.target.value })}
                           >
                             <option value="">Chọn khoa</option>
                             {khoaList.map(khoa => (
-                              <option key={khoa.id} value={khoa.id}>{khoa.tenKhoa}</option>
+                              <option key={khoa._id || khoa.id} value={khoa._id || khoa.id}>
+                                {khoa.tenKhoa}
+                              </option>
                             ))}
                           </select>
                         </div>
@@ -333,7 +380,7 @@ const AccountManagement = () => {
                         type="password"
                         placeholder="Để trống sẽ dùng mật khẩu mặc định"
                         value={newAccount.password}
-                        onChange={(e) => setNewAccount({...newAccount, password: e.target.value})}
+                        onChange={(e) => setNewAccount({ ...newAccount, password: e.target.value })}
                       />
                       <p className="text-xs text-gray-500 mt-1">
                         Mật khẩu mặc định: hospitalHappy
@@ -350,6 +397,39 @@ const AccountManagement = () => {
                   </div>
                 </div>
               )}
+
+              {/* Thống kê */}
+              <div className="mb-4 grid grid-cols-4 gap-4">
+                <div className="bg-blue-50 px-4 py-3 rounded-lg border border-blue-100">
+                  <div className="text-sm text-blue-600 font-medium">Tổng số</div>
+                  <div className="text-2xl font-bold text-blue-700 mt-1">
+                    {filteredAccounts.length}
+                  </div>
+                  <div className="text-xs text-blue-500 mt-1">tài khoản</div>
+                </div>
+                <div className="bg-green-50 px-4 py-3 rounded-lg border border-green-100">
+                  <div className="text-sm text-green-600 font-medium">Hoạt động</div>
+                  <div className="text-2xl font-bold text-green-700 mt-1">
+                    {filteredAccounts.filter(a => a.isActive).length}
+                  </div>
+                  <div className="text-xs text-green-500 mt-1">tài khoản</div>
+                </div>
+                <div className="bg-red-50 px-4 py-3 rounded-lg border border-red-100">
+                  <div className="text-sm text-red-600 font-medium">Đình chỉ</div>
+                  <div className="text-2xl font-bold text-red-700 mt-1">
+                    {filteredAccounts.filter(a => !a.isActive).length}
+                  </div>
+                  <div className="text-xs text-red-500 mt-1">tài khoản</div>
+                </div>
+                <div className="bg-purple-50 px-4 py-3 rounded-lg border border-purple-100">
+                  <div className="text-sm text-purple-600 font-medium">Bác sĩ</div>
+                  <div className="text-2xl font-bold text-purple-700 mt-1">
+                    {filteredAccounts.filter(a => a.role === 'Doctor').length}
+                  </div>
+                  <div className="text-xs text-purple-500 mt-1">tài khoản</div>
+                </div>
+              </div>
+              {/* end thống kê */}
 
               {/* Thanh tìm kiếm và lọc */}
               <div className="mb-6 space-y-4">
@@ -411,9 +491,9 @@ const AccountManagement = () => {
               </div>
 
               {/* Bảng danh sách tài khoản */}
-              <div className="overflow-x-auto border rounded-lg">
+              <div className="overflow-auto border rounded-lg max-h-[300px] hide-scrollbar">
                 <table className="w-full border-collapse">
-                  <thead>
+                  <thead className="sticky top-0 z-10">
                     <tr className="bg-gray-50 border-b">
                       <th className="p-3 text-left font-semibold text-sm text-gray-700">STT</th>
                       <th className="p-3 text-left font-semibold text-sm text-gray-700">Username</th>
@@ -441,8 +521,8 @@ const AccountManagement = () => {
                       </tr>
                     ) : (
                       filteredAccounts.map((account, index) => (
-                        <tr 
-                          key={account.id} 
+                        <tr
+                          key={account.id}
                           className="border-b hover:bg-gray-50 transition-colors"
                         >
                           <td className="p-3 text-sm">{index + 1}</td>
@@ -453,11 +533,10 @@ const AccountManagement = () => {
                           <td className="p-3 text-sm text-gray-600">{account.email}</td>
                           <td className="p-3 text-sm text-gray-600">{account.SDT}</td>
                           <td className="p-3">
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${
-                              account.role === 'Admin' ? 'bg-red-100 text-red-800' :
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${account.role === 'Admin' ? 'bg-red-100 text-red-800' :
                               account.role === 'Doctor' ? 'bg-blue-100 text-blue-800' :
-                              'bg-green-100 text-green-800'
-                            }`}>
+                                'bg-green-100 text-green-800'
+                              }`}>
                               {account.role}
                             </span>
                           </td>
@@ -494,37 +573,7 @@ const AccountManagement = () => {
                 </table>
               </div>
 
-              {/* Thống kê */}
-              <div className="mt-6 grid grid-cols-4 gap-4">
-                <div className="bg-blue-50 px-4 py-3 rounded-lg border border-blue-100">
-                  <div className="text-sm text-blue-600 font-medium">Tổng số</div>
-                  <div className="text-2xl font-bold text-blue-700 mt-1">
-                    {filteredAccounts.length}
-                  </div>
-                  <div className="text-xs text-blue-500 mt-1">tài khoản</div>
-                </div>
-                <div className="bg-green-50 px-4 py-3 rounded-lg border border-green-100">
-                  <div className="text-sm text-green-600 font-medium">Hoạt động</div>
-                  <div className="text-2xl font-bold text-green-700 mt-1">
-                    {filteredAccounts.filter(a => a.isActive).length}
-                  </div>
-                  <div className="text-xs text-green-500 mt-1">tài khoản</div>
-                </div>
-                <div className="bg-red-50 px-4 py-3 rounded-lg border border-red-100">
-                  <div className="text-sm text-red-600 font-medium">Đình chỉ</div>
-                  <div className="text-2xl font-bold text-red-700 mt-1">
-                    {filteredAccounts.filter(a => !a.isActive).length}
-                  </div>
-                  <div className="text-xs text-red-500 mt-1">tài khoản</div>
-                </div>
-                <div className="bg-purple-50 px-4 py-3 rounded-lg border border-purple-100">
-                  <div className="text-sm text-purple-600 font-medium">Bác sĩ</div>
-                  <div className="text-2xl font-bold text-purple-700 mt-1">
-                    {filteredAccounts.filter(a => a.role === 'Doctor').length}
-                  </div>
-                  <div className="text-xs text-purple-500 mt-1">tài khoản</div>
-                </div>
-              </div>
+
             </CardContent>
           </Card>
         </div>
