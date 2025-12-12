@@ -1,5 +1,6 @@
 import { response } from "express";
 import Khoa from "../Models/Khoa.js"
+import BacSi from "../Models/BacSi.js";
 
 export const regisKhoa = async (request, response) => {
     try {
@@ -125,7 +126,6 @@ export const deleteKhoa = async (request, response) => {
             });
         }
 
-        const BacSi = await BacSi.default;
         const doctorsCount = await BacSi.countDocuments({ Khoa: id });
 
         if (doctorsCount > 0) {
@@ -153,9 +153,9 @@ export const deleteKhoa = async (request, response) => {
 
 
 
-export const updateKhoa = async (reques, response) => {
+export const updateKhoa = async (request, response) => {
     try {
-        const { id } = reques.params;
+        const { id } = request.params;
 
         const {
             tenKhoa,
@@ -168,24 +168,6 @@ export const updateKhoa = async (reques, response) => {
             return response.status(400).json({
                 message: "ID không hợp lệ "
             });
-        }
-
-        if (email && email !== Khoa.email) {
-            const checkEmail = await Khoa.findOne({ email });
-            if (checkEmail) {
-                return response.status(400).json({
-                    message: "Email đã tồn tại!"
-                });
-            }
-        }
-
-        if (SDT && SDT !== Khoa.SDT) {
-            const checkPhone = await Khoa.findOne({ SDT });
-            if (checkPhone) {
-                return response.status(400).json({
-                    message: "Số điện thoại đã tồn tại!"
-                });
-            }
         }
 
         const updateData = {};

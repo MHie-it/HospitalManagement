@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState ,useRef} from 'react'
 import Backgound from '@/components/ui/Backgound'
 import Dashboard from '@/components/ui/Dashboard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,14 +12,11 @@ import { doctorService } from '@/services/doctorService'
 const DoctorManagement = () => {
     const [khoaList, setKhoaList] = useState([])
 
+    const [doctorList, setDoctorList] = useState([])
+
     const [loading, setLoading] = useState(false)
 
     const [error, setError] = useState(null)
-
-
-
-    const [bacSiList, setBacSiList] = useState([])
-    const [loadingDoctors, setLoadingDoctors] = useState(false)
 
     // State
     const [searchTerm, setSearchTerm] = useState('')
@@ -33,6 +30,9 @@ const DoctorManagement = () => {
         moTa: ''
     })
 
+    const scrollContainerRef = useRef(null)
+
+
     useEffect(() => {
         fetchKhoaList()
         fetchAllDoctors()
@@ -43,11 +43,11 @@ const DoctorManagement = () => {
             const data = await doctorService.getAllDoctors()
 
             if (data && data.data) {
-                setBacSiList(data.data)
+                setDoctorList(data.data)
             } else if (Array.isArray(data)) {
-                setBacSiList(data)
+                setDoctorList(data)
             } else {
-                setBacSiList([])
+                setDoctorList([])
             }
         } catch (error) {
             console.error('Lỗi khi lấy danh sách bác sĩ:', error)
@@ -55,20 +55,6 @@ const DoctorManagement = () => {
         }
     }
 
-
-    // const fetchDoctorsByKhoa = async (khoaId) => {
-    //     setLoadingDoctors(true)
-    //     try {
-    //         const doctors = await doctorService.getDoctorsByKhoa(khoaId)
-    //         return doctors
-    //     } catch (error) {
-    //         console.error('Lỗi khi lấy danh sách bác sĩ theo khoa:', error)
-    //         toast.error(error.message || 'Không thể tải danh sách bác sĩ')
-    //         return []
-    //     } finally {
-    //         setLoadingDoctors(false)
-    //     }
-    // }
 
     const fetchKhoaList = async () => {
         setLoading(true)
@@ -107,8 +93,8 @@ const DoctorManagement = () => {
 
     // Lấy danh sách bác sĩ của khoa được chọn
     const doctorsOfSelectedKhoa = selectedKhoa
-        ? bacSiList.filter(bacSi => {
-            const khoaId = bacSi.Khoa?._id || bacSi.Khoa
+        ? doctorList.filter(doctor => {
+            const khoaId = doctor.Khoa?._id || doctor.Khoa
             return khoaId === selectedKhoa._id
         })
         : []
@@ -119,6 +105,14 @@ const DoctorManagement = () => {
         setShowAddKhoaForm(false)
         setEditingKhoa(null)
 
+        setTimeout(() => {
+            // Cuộn container CardContent
+            if (scrollContainerRef.current) {
+                scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+            }
+            // Hoặc cuộn window nếu cần
+            window.scrollTo({ top: 0, behavior: 'smooth' })
+        }, 0)
     }
 
     // Hàm mở form thêm khoa
@@ -180,11 +174,9 @@ const DoctorManagement = () => {
 
         try {
             if (editingKhoa) {
-                // ✅ Gọi API để cập nhật
                 await khoaService.updateKhoa(editingKhoa._id, khoaFormData)
                 toast.success('Cập nhật khoa thành công!')
             } else {
-                // ✅ Gọi API để tạo mới
                 await khoaService.createKhoa(khoaFormData)
                 toast.success('Thêm khoa thành công!')
             }
@@ -205,17 +197,16 @@ const DoctorManagement = () => {
             toast.error(error.message || 'Có lỗi xảy ra khi lưu khoa')
         }
     }
-    
+
     // Hàm xóa khoa
     const handleDeleteKhoa = async (khoa, e) => {  // Thêm async
         e.stopPropagation()
         if (window.confirm(`Bạn có chắc chắn muốn xóa khoa "${khoa.tenKhoa}"?`)) {
             try {
-                // ✅ Reload danh sách bác sĩ để đảm bảo dữ liệu mới nhất
                 await fetchAllDoctors()
 
                 // ✅ Kiểm tra bác sĩ sau khi reload
-                const hasDoctors = bacSiList.some(bs => {
+                const hasDoctors = doctorList.some(bs => {
                     const khoaId = bs.Khoa?._id || bs.Khoa
                     return khoaId === khoa._id
                 })
@@ -249,7 +240,7 @@ const DoctorManagement = () => {
     }
 
     // Tính tổng số bác sĩ
-    const totalDoctors = bacSiList.length
+    const totalDoctors = doctorList.length
     const totalKhoa = khoaList.length
 
     return (
@@ -273,11 +264,13 @@ const DoctorManagement = () => {
                             </div>
                         </CardHeader>
 
-                        <CardContent className="flex-1 overflow-y-auto">
+                        <CardContent
+                            ref={scrollContainerRef}
+                            className="flex-1 overflow-y-auto hide-scrollbar">
                             {/* Thống kê */}
                             <div className="grid grid-cols-3 gap-4 mb-6 flex-shrink-0">
                                 <Card className="bg-blue-50 border-blue-200">
-                                    <div className="p-4">
+                                    <div className="p-0 px-4">
                                         <div className="flex items-center gap-2 mb-2">
                                             <Building2 className="w-5 h-5 text-blue-600" />
                                             <span className="text-sm font-medium text-blue-600">Tổng số khoa</span>
@@ -286,7 +279,7 @@ const DoctorManagement = () => {
                                     </div>
                                 </Card>
                                 <Card className="bg-green-50 border-green-200">
-                                    <div className="p-4">
+                                    <div className="p-0 px-4">
                                         <div className="flex items-center gap-2 mb-2">
                                             <Users className="w-5 h-5 text-green-600" />
                                             <span className="text-sm font-medium text-green-600">Tổng số bác sĩ</span>
@@ -295,7 +288,7 @@ const DoctorManagement = () => {
                                     </div>
                                 </Card>
                                 <Card className="bg-purple-50 border-purple-200">
-                                    <div className="p-4">
+                                    <div className="p-0 px-4">
                                         <div className="flex items-center gap-2 mb-2">
                                             <Users className="w-5 h-5 text-purple-600" />
                                             <span className="text-sm font-medium text-purple-600">
@@ -323,7 +316,7 @@ const DoctorManagement = () => {
                                 </div>
                             </div>
 
-                            <div className="flex gap-6 flex-1 min-h-0">
+                            <div className="flex gap-6 flex-1 min-h-0 ">
                                 {/* Cột trái: Danh sách khoa */}
                                 <div className="w-2/3 flex flex-col min-h-0">
                                     <div className="flex justify-between items-center mb-4 flex-shrink-0">

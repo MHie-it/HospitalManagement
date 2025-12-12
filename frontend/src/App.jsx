@@ -1,4 +1,4 @@
-import {Toaster , toast} from "sonner"
+﻿import {Toaster , toast} from "sonner"
 import {BrowserRouter,Route,Routes} from "react-router"
 import LoginPage from './pages/Login/LoginPage';
 import RegisterPage from './pages/Login/RegisterPage';
@@ -9,7 +9,8 @@ import UserPage from "./pages/User/UserPage";
 import DatLichKham from "./pages/User/DatLichKham";
 import ServiceManagement from "./pages/Admin/ServiceManagement";
 import MedicalDevicesManagement from "./pages/Admin/MedicalDevicesManagement";
-import FindDoctor from "./pages/Doctor/FindDoctor";
+import DoctorPage from "./pages/Doctor/DoctorPage";
+import LichHen from "./pages/Doctor/LichHen";
 
 function App() {
   return (
@@ -71,7 +72,12 @@ function App() {
 
         <Route 
           path="/doctorhome" //duong dan
-          element={<FindDoctor/>}
+          element={<DoctorPage/>}
+        />
+
+         <Route 
+          path="/lichhen" //duong dan
+          element={<LichHen/>}
         />
         {/* setup route */}
       </Routes>
