@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Calendar,
   Clock,
@@ -41,18 +41,22 @@ import {
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router';
 import { authService } from '@/services/authService';
+import { userService } from '@/services/userService';
 
 const UserPage = () => {
   const navigate = useNavigate();
   // Thêm ref cho phần profile tabs
   const profileSectionRef = useRef(null);
-  // Dữ liệu mẫu
+  const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState(null);
+  
+  // Dữ liệu user info - sẽ được load từ API
   const [userInfo, setUserInfo] = useState({
-    hoTen: 'Nguyễn Văn A',
-    email: 'nguyenvana@example.com',
-    SDT: '0123456789',
-    ngaySinh: '1990-01-01',
-    diaChi: '123 Đường ABC, Quận XYZ, TP.HCM',
+    hoTen: '',
+    email: '',
+    SDT: '',
+    ngaySinh: '',
+    diaChi: '',
     gioiTinh: 'Nam',
     imgURL: ''
   });
@@ -179,6 +183,92 @@ const UserPage = () => {
   const handleBookPackage = (packageId) => {
     toast.info(`Chức năng đặt gói khám ${packageId} đang được phát triển`);
     // TODO: Navigate to booking page or open modal
+  };
+
+  // Load user info khi component mount
+  useEffect(() => {
+    const loadUserInfo = async () => {
+      try {
+        // Lấy user từ localStorage
+        const userStr = localStorage.getItem('user');
+        if (!userStr) {
+          toast.error('Vui lòng đăng nhập lại!');
+          navigate('/');
+          return;
+        }
+
+        const user = JSON.parse(userStr);
+        const currentUserId = user._id || user.id;
+        
+        if (!currentUserId) {
+          toast.error('Không tìm thấy thông tin user!');
+          return;
+        }
+
+        setUserId(currentUserId);
+        
+        // Fetch user info từ API
+        setLoading(true);
+        const response = await userService.getUserInfo(currentUserId);
+        
+        if (response.data) {
+          const data = response.data;
+          setUserInfo({
+            hoTen: data.hoTen || '',
+            email: data.email || '',
+            SDT: data.SDT || '',
+            ngaySinh: data.ngaySinh ? new Date(data.ngaySinh).toISOString().split('T')[0] : '',
+            diaChi: data.diaChi || '',
+            gioiTinh: data.gioiTinh || 'Nam',
+            imgURL: data.imgURL || ''
+          });
+        }
+      } catch (error) {
+        console.error('Error loading user info:', error);
+        toast.error(error.message || 'Không thể tải thông tin người dùng!');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUserInfo();
+  }, [navigate]);
+
+  // Handler để cập nhật thông tin
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    
+    if (!userId) {
+      toast.error('Không tìm thấy thông tin user!');
+      return;
+    }
+
+    // Validation
+    if (!userInfo.hoTen.trim() || !userInfo.email.trim() || !userInfo.SDT.trim()) {
+      toast.error('Vui lòng điền đầy đủ thông tin bắt buộc!');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await userService.updateUserInfo(userId, userInfo);
+      
+      if (response.data) {
+        toast.success(response.message || 'Cập nhật thông tin thành công!');
+        
+        // Cập nhật lại user trong localStorage nếu cần
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          localStorage.setItem('user', JSON.stringify(user));
+        }
+      }
+    } catch (error) {
+      console.error('Error updating user info:', error);
+      toast.error(error.message || 'Cập nhật thông tin thất bại!');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Handler cho đăng xuất
@@ -649,7 +739,7 @@ const UserPage = () => {
                     <CardDescription>Chỉnh sửa thông tin cá nhân của bạn</CardDescription>
                   </CardHeader>
                   <CardContent className="pt-6">
-                    <form className="space-y-5">
+                    <form className="space-y-5" onSubmit={handleUpdateProfile}>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div className="space-y-2">
                           <Label htmlFor="hoTen" className="flex items-center gap-2">
@@ -733,11 +823,21 @@ const UserPage = () => {
                     </form>
                   </CardContent>
                   <CardFooter className="flex gap-3 pt-4 border-t-2 border-blue-50 bg-gradient-to-r from-blue-50/30 to-teal-50/30">
-                    <Button className="flex-1 bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 shadow-md">
+                    <Button 
+                      type="submit"
+                      className="flex-1 bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 shadow-md"
+                      disabled={loading}
+                    >
                       <CheckCircle className="w-4 h-4 mr-2" />
-                      Lưu thay đổi
+                      {loading ? 'Đang lưu...' : 'Lưu thay đổi'}
                     </Button>
-                    <Button variant="outline" className="flex-1 border-blue-200 hover:bg-blue-50">
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      className="flex-1 border-blue-200 hover:bg-blue-50"
+                      onClick={() => window.location.reload()}
+                      disabled={loading}
+                    >
                       Hủy
                     </Button>
                   </CardFooter>
