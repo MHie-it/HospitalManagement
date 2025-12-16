@@ -14,9 +14,9 @@ const dichVuSchema = new mongoose.Schema(
             required: true,
         },
 
-        giaTien: {
-            type: mongoose.Schema.Types.Decimal128,
-            required: true,
+        giaTien : {
+            type : Decimal128 ,
+            required : true,
         },
 
         Khoa: {

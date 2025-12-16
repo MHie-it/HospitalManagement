@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Calendar,
   Clock,
@@ -19,86 +19,143 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router';
+import { khoaService } from '@/services/khoaService';
+import { doctorService } from '@/services/doctorService';
+import { userService } from '@/services/userService';
 
 const DatLichKham = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   
-  // Dữ liệu mẫu - sẽ thay thế bằng API call sau
-  const [khoaList] = useState([
-    { id: 1, tenKhoa: 'Khoa Nội tổng quát' },
-    { id: 2, tenKhoa: 'Khoa Tim mạch' },
-    { id: 3, tenKhoa: 'Khoa Dinh dưỡng' },
-    { id: 4, tenKhoa: 'Khoa Xét nghiệm' },
-    { id: 5, tenKhoa: 'Khoa Nhi' },
-    { id: 6, tenKhoa: 'Khoa Sản' }
-  ]);
-
-  const [bacSiList] = useState([
-    { id: 1, tenBS: 'BS. Nguyễn Văn A', khoaId: 1 },
-    { id: 2, tenBS: 'BS. Trần Thị B', khoaId: 1 },
-    { id: 3, tenBS: 'BS. Lê Văn C', khoaId: 2 },
-    { id: 4, tenBS: 'BS. Phạm Thị D', khoaId: 3 }
-  ]);
-
-  const [dichVuList] = useState([
-    { id: 1, tenDV: 'Khám tổng quát', khoaId: 1, giaTien: 200000 },
-    { id: 2, tenDV: 'Tư vấn dinh dưỡng', khoaId: 3, giaTien: 150000 },
-    { id: 3, tenDV: 'Khám tim mạch', khoaId: 2, giaTien: 300000 },
-    { id: 4, tenDV: 'Xét nghiệm máu', khoaId: 4, giaTien: 250000 }
-  ]);
+  // Danh sách khoa từ MongoDB
+  const [khoaList, setKhoaList] = useState([]);
+  
+  // Danh sách bác sĩ từ MongoDB - sẽ được load khi chọn khoa
+  const [bacSiList, setBacSiList] = useState([]);
 
   const [formData, setFormData] = useState({
     khoa: '',
     bacSi: '',
-    dichVu: [],
     ngayHen: '',
     gioHen: '',
     moTa: ''
   });
 
-  const [selectedDichVu, setSelectedDichVu] = useState([]);
+  // Load danh sách khoa từ MongoDB khi component mount
+  useEffect(() => {
+    const loadKhoaList = async () => {
+      try {
+        setLoading(true);
+        const response = await khoaService.getAllKhoa();
+        
+        // API trả về array trực tiếp
+        if (Array.isArray(response)) {
+          setKhoaList(response);
+        } else if (response.data && Array.isArray(response.data)) {
+          setKhoaList(response.data);
+        } else {
+          setKhoaList([]);
+        }
+      } catch (error) {
+        console.error('Error loading khoa list:', error);
+        toast.error(error.message || 'Không thể tải danh sách khoa!');
+        setKhoaList([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Lọc bác sĩ theo khoa
-  const filteredBacSi = bacSiList.filter(bs => bs.khoaId === parseInt(formData.khoa));
-  
-  // Lọc dịch vụ theo khoa
-  const filteredDichVu = dichVuList.filter(dv => dv.khoaId === parseInt(formData.khoa));
+    loadKhoaList();
+  }, []);
+
+  // Load danh sách bác sĩ khi khoa được chọn
+  useEffect(() => {
+    const loadBacSiList = async () => {
+      if (!formData.khoa) {
+        setBacSiList([]);
+        setFormData(prev => ({ ...prev, bacSi: '' }));
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const doctors = await doctorService.getDoctorsByKhoa(formData.khoa);
+        
+        // Xử lý response - có thể là array hoặc object có data
+        if (Array.isArray(doctors)) {
+          setBacSiList(doctors);
+        } else if (doctors && Array.isArray(doctors.data)) {
+          setBacSiList(doctors.data);
+        } else {
+          setBacSiList([]);
+        }
+      } catch (error) {
+        console.error('Error loading doctors list:', error);
+        toast.error(error.message || 'Không thể tải danh sách bác sĩ!');
+        setBacSiList([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadBacSiList();
+  }, [formData.khoa]);
+
+  // Tạo danh sách giờ hành chính (8:00 - 17:30, mỗi 30 phút)
+  const generateGioHanhChinh = () => {
+    const gioList = [];
+    for (let hour = 8; hour <= 17; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        gioList.push(timeString);
+      }
+    }
+    return gioList;
+  };
+
+  const gioHanhChinhList = generateGioHanhChinh();
 
   // Xử lý thay đổi khoa
   const handleKhoaChange = (khoaId) => {
     setFormData({
       ...formData,
       khoa: khoaId,
-      bacSi: '',
-      dichVu: []
+      bacSi: '' // Reset bác sĩ khi đổi khoa
     });
-    setSelectedDichVu([]);
   };
 
-  // Xử lý chọn dịch vụ
-  const handleDichVuToggle = (dichVuId) => {
-    const dichVu = dichVuList.find(dv => dv.id === dichVuId);
-    if (!dichVu) return;
-
-    const isSelected = selectedDichVu.some(dv => dv.id === dichVuId);
+  // Xử lý thay đổi ngày - reset giờ nếu chọn ngày hôm nay và giờ đã qua
+  const handleNgayHenChange = (ngayHen) => {
+    const today = new Date().toISOString().split('T')[0];
+    const selectedDate = new Date(ngayHen);
+    const now = new Date();
     
-    if (isSelected) {
-      setSelectedDichVu(selectedDichVu.filter(dv => dv.id !== dichVuId));
-      setFormData({
-        ...formData,
-        dichVu: formData.dichVu.filter(id => id !== dichVuId)
-      });
+    // Nếu chọn ngày hôm nay, kiểm tra giờ
+    if (ngayHen === today) {
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      const currentTime = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
+      
+      // Nếu giờ hiện tại đã qua giờ hành chính, reset giờ
+      if (formData.gioHen && formData.gioHen < currentTime) {
+        setFormData({
+          ...formData,
+          ngayHen: ngayHen,
+          gioHen: ''
+        });
+      } else {
+        setFormData({
+          ...formData,
+          ngayHen: ngayHen
+        });
+      }
     } else {
-      setSelectedDichVu([...selectedDichVu, dichVu]);
       setFormData({
         ...formData,
-        dichVu: [...formData.dichVu, dichVuId]
+        ngayHen: ngayHen
       });
     }
   };
-
-  // Tính tổng tiền
-  const totalPrice = selectedDichVu.reduce((sum, dv) => sum + dv.giaTien, 0);
 
   // Xử lý submit
   const handleSubmit = async (e) => {
@@ -115,13 +172,19 @@ const DatLichKham = () => {
       return;
     }
 
-    if (formData.dichVu.length === 0) {
-      toast.error('Vui lòng chọn ít nhất một dịch vụ!');
+    if (!formData.ngayHen) {
+      toast.error('Vui lòng chọn ngày hẹn!');
       return;
     }
 
-    if (!formData.ngayHen) {
-      toast.error('Vui lòng chọn ngày hẹn!');
+    // Kiểm tra ngày không được trước ngày hiện tại
+    const selectedDate = new Date(formData.ngayHen);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    selectedDate.setHours(0, 0, 0, 0);
+
+    if (selectedDate < today) {
+      toast.error('Ngày hẹn không được trước ngày hiện tại!');
       return;
     }
 
@@ -130,19 +193,66 @@ const DatLichKham = () => {
       return;
     }
 
+    // Nếu chọn ngày hôm nay, kiểm tra giờ không được trước giờ hiện tại
+    if (formData.ngayHen === today.toISOString().split('T')[0]) {
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      const [selectedHour, selectedMinute] = formData.gioHen.split(':').map(Number);
+      
+      const currentTimeInMinutes = currentHour * 60 + currentMinute;
+      const selectedTimeInMinutes = selectedHour * 60 + selectedMinute;
+      
+      if (selectedTimeInMinutes <= currentTimeInMinutes) {
+        toast.error('Giờ hẹn phải sau giờ hiện tại!');
+        return;
+      }
+    }
+
     try {
-      // TODO: Gọi API để đặt lịch
-      console.log('Form data:', formData);
+      setLoading(true);
       
-      toast.success('Đặt lịch khám thành công!');
-      
-      // Chuyển về trang user sau 1.5 giây
-      setTimeout(() => {
+      // Lấy userId từ localStorage
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        toast.error('Vui lòng đăng nhập lại!');
         navigate('/');
-      }, 1500);
+        return;
+      }
+
+      const user = JSON.parse(userStr);
+      const userId = user._id || user.id;
+
+      if (!userId) {
+        toast.error('Không tìm thấy thông tin user!');
+        return;
+      }
+
+      // Gọi API để đặt lịch
+      const appointmentData = {
+        userId: userId,
+        bacSiId: formData.bacSi,
+        ngayHen: formData.ngayHen,
+        gioHen: formData.gioHen,
+        dichVuIds: [], // Không có dịch vụ, để rỗng - backend sẽ tự tìm dịch vụ mặc định
+        moTa: formData.moTa || ''
+      };
+
+      const response = await userService.createAppointment(appointmentData);
+      
+      if (response.data) {
+        toast.success(response.message || 'Đặt lịch khám thành công!');
+        
+        // Chuyển về trang user sau 1.5 giây
+        setTimeout(() => {
+          navigate('/userpage');
+        }, 1500);
+      }
     } catch (error) {
-      toast.error('Có lỗi xảy ra khi đặt lịch!');
-      console.error(error);
+      console.error('Error creating appointment:', error);
+      toast.error(error.response?.data?.message || error.message || 'Có lỗi xảy ra khi đặt lịch!');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -156,7 +266,7 @@ const DatLichKham = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/userpage')}
                 className="gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -197,10 +307,11 @@ const DatLichKham = () => {
                   onChange={(e) => handleKhoaChange(e.target.value)}
                   className="flex h-11 w-full rounded-md border border-blue-200 bg-white px-3 py-2 text-sm shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
+                  disabled={loading}
                 >
-                  <option value="">-- Chọn khoa --</option>
+                  <option value="">{loading ? 'Đang tải...' : '-- Chọn khoa --'}</option>
                   {khoaList.map((khoa) => (
-                    <option key={khoa.id} value={khoa.id}>
+                    <option key={khoa._id} value={khoa._id}>
                       {khoa.tenKhoa}
                     </option>
                   ))}
@@ -220,69 +331,18 @@ const DatLichKham = () => {
                     onChange={(e) => setFormData({ ...formData, bacSi: e.target.value })}
                     className="flex h-11 w-full rounded-md border border-blue-200 bg-white px-3 py-2 text-sm shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
+                    disabled={loading}
                   >
-                    <option value="">-- Chọn bác sĩ --</option>
-                    {filteredBacSi.map((bs) => (
-                      <option key={bs.id} value={bs.id}>
+                    <option value="">{loading ? 'Đang tải...' : '-- Chọn bác sĩ --'}</option>
+                    {bacSiList.length === 0 && !loading && (
+                      <option value="" disabled>Không có bác sĩ nào trong khoa này</option>
+                    )}
+                    {bacSiList.map((bs) => (
+                      <option key={bs._id} value={bs._id}>
                         {bs.tenBS}
                       </option>
                     ))}
                   </select>
-                </div>
-              )}
-
-              {/* Chọn Dịch vụ */}
-              {formData.khoa && (
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2 text-base font-semibold">
-                    <FileText className="w-5 h-5 text-blue-600" />
-                    Chọn dịch vụ <span className="text-red-500">*</span>
-                  </Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {filteredDichVu.map((dv) => {
-                      const isSelected = selectedDichVu.some(selected => selected.id === dv.id);
-                      return (
-                        <div
-                          key={dv.id}
-                          onClick={() => handleDichVuToggle(dv.id)}
-                          className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                            isSelected
-                              ? 'border-blue-500 bg-blue-50 shadow-md'
-                              : 'border-blue-200 hover:border-blue-300 bg-white'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1">
-                              <p className="font-semibold text-gray-800">{dv.tenDV}</p>
-                              <p className="text-sm text-gray-600 mt-1">
-                                {dv.giaTien.toLocaleString('vi-VN')} đ
-                              </p>
-                            </div>
-                            {isSelected && (
-                              <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {selectedDichVu.length > 0 && (
-                    <div className="mt-3 p-4 bg-gradient-to-r from-blue-50 to-teal-50 rounded-xl border border-blue-200">
-                      <p className="text-sm text-gray-600 mb-2">Dịch vụ đã chọn:</p>
-                      <ul className="space-y-1">
-                        {selectedDichVu.map((dv) => (
-                          <li key={dv.id} className="text-sm font-medium text-gray-800">
-                            • {dv.tenDV} - {dv.giaTien.toLocaleString('vi-VN')} đ
-                          </li>
-                        ))}
-                      </ul>
-                      <div className="mt-3 pt-3 border-t border-blue-200">
-                        <p className="text-lg font-bold text-blue-700">
-                          Tổng tiền: {totalPrice.toLocaleString('vi-VN')} đ
-                        </p>
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -296,7 +356,7 @@ const DatLichKham = () => {
                   id="ngayHen"
                   type="date"
                   value={formData.ngayHen}
-                  onChange={(e) => setFormData({ ...formData, ngayHen: e.target.value })}
+                  onChange={(e) => handleNgayHenChange(e.target.value)}
                   min={new Date().toISOString().split('T')[0]}
                   className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
                   required
@@ -309,14 +369,43 @@ const DatLichKham = () => {
                   <Clock className="w-5 h-5 text-blue-600" />
                   Giờ hẹn <span className="text-red-500">*</span>
                 </Label>
-                <Input
+                <select
                   id="gioHen"
-                  type="time"
                   value={formData.gioHen}
                   onChange={(e) => setFormData({ ...formData, gioHen: e.target.value })}
-                  className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+                  className="flex h-11 w-full rounded-md border border-blue-200 bg-white px-3 py-2 text-sm shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
-                />
+                >
+                  <option value="">-- Chọn giờ --</option>
+                  {(() => {
+                    // Nếu chọn ngày hôm nay, chỉ hiển thị giờ còn lại trong ngày
+                    const today = new Date().toISOString().split('T')[0];
+                    if (formData.ngayHen === today) {
+                      const now = new Date();
+                      const currentHour = now.getHours();
+                      const currentMinute = now.getMinutes();
+                      const currentTimeInMinutes = currentHour * 60 + currentMinute;
+                      
+                      return gioHanhChinhList
+                        .filter(gio => {
+                          const [hour, minute] = gio.split(':').map(Number);
+                          const timeInMinutes = hour * 60 + minute;
+                          return timeInMinutes > currentTimeInMinutes;
+                        })
+                        .map(gio => (
+                          <option key={gio} value={gio}>
+                            {gio}
+                          </option>
+                        ));
+                    }
+                    // Nếu chọn ngày khác, hiển thị tất cả giờ hành chính
+                    return gioHanhChinhList.map(gio => (
+                      <option key={gio} value={gio}>
+                        {gio}
+                      </option>
+                    ));
+                  })()}
+                </select>
               </div>
 
               {/* Mô tả */}
@@ -341,7 +430,7 @@ const DatLichKham = () => {
                 type="button"
                 variant="outline"
                 className="flex-1 border-blue-200 hover:bg-blue-50"
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/userpage')}
               >
                 Hủy
               </Button>
@@ -350,7 +439,7 @@ const DatLichKham = () => {
                 className="flex-1 bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 shadow-md"
               >
                 <CheckCircle className="w-4 h-4 mr-2" />
-                Xác nhận đặt lịch
+                Đặt lịch
               </Button>
             </CardFooter>
           </form>

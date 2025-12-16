@@ -1,4 +1,4 @@
-// Xóa dòng này: import { response } from "express";
+
 import DichVu from "../Models/DichVu.js";
 import Khoa from "../Models/Khoa.js";
 import LoaiDichVu from "../Models/LoaiDichVu.js";
