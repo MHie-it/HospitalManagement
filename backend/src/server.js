@@ -6,6 +6,7 @@ import khoaRouter from './Router/khoaRouter.js';
 import doctorRouter from './Router/doctorRouter.js';
 import nguoiDungRouter from './Router/nguoiDungRouter.js';
 import lichHenRouter from './Router/lichHenRouter.js';
+import lichLamViecRouter from './Router/lichLamViecRouter.js';
 import dichVuRouter from './Router/dichVuRouter.js';
 import loaiDVRouter from './Router/loaiDVRouter.js';
 import thietbiRouter from './Router/thietbiRouter.js';
@@ -32,6 +33,7 @@ app.use("/api/khoa",khoaRouter)
 app.use("/api/doctor",doctorRouter);
 app.use("/api/nguoiDung",nguoiDungRouter);
 app.use("/api/lichHen",lichHenRouter);
+app.use("/api/lichLamViec",lichLamViecRouter);
 app.use("/api/dichvu",dichVuRouter);
 app.use("/api/loaidv",loaiDVRouter);
 app.use("/api/thietbi",thietbiRouter);

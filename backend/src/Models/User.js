@@ -36,6 +36,16 @@ const userSchema  = new mongoose.Schema(
             ref : 'NguoiDung',
             required : false,
         },
+
+        resetPasswordToken: {
+            type: String,
+            default: null,
+        },
+
+        resetPasswordExpires: {
+            type: Date,
+            default: null,
+        },
     },
 
     {

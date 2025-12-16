@@ -14,8 +14,12 @@ api.interceptors.response.use(
   (error) => {
     // Xử lý lỗi chung
     if (error.response) {
-      // Server trả về lỗi
-      return Promise.reject(error.response.data);
+      // Server trả về lỗi - giữ nguyên error object để có thể truy cập error.response.data
+      // Chỉ thêm message vào error object nếu chưa có
+      if (!error.message && error.response.data?.message) {
+        error.message = error.response.data.message;
+      }
+      return Promise.reject(error);
     } else if (error.request) {
       // Request được gửi nhưng không nhận được response
       return Promise.reject({ message: 'Không thể kết nối đến server!' });

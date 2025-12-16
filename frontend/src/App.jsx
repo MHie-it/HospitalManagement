@@ -11,6 +11,9 @@ import ServiceManagement from "./pages/Admin/ServiceManagement";
 import MedicalDevicesManagement from "./pages/Admin/MedicalDevicesManagement";
 import DoctorPage from "./pages/Doctor/DoctorPage";
 import LichHen from "./pages/Doctor/LichHen";
+import DoctorProfile from "./pages/Doctor/DoctorProfile";
+import DoctorSchedule from "./pages/Doctor/DoctorSchedule";
+import DoctorHistory from "./pages/Doctor/DoctorHistory";
 import LichHenManagement from "./pages/Admin/LichHenManagement";
 import LoaiDichVuManagement from "./pages/Admin/LoaiDichVuManagement";
 
@@ -89,6 +92,18 @@ function App() {
          <Route 
           path="/lichhenkham" //duong dan
           element={<LichHen/>}
+        />
+        <Route 
+          path="/doctor/profile" //duong dan
+          element={<DoctorProfile/>}
+        />
+        <Route 
+          path="/doctor/schedule" //duong dan
+          element={<DoctorSchedule/>}
+        />
+        <Route 
+          path="/doctor/history" //duong dan
+          element={<DoctorHistory/>}
         />
         {/* setup route */}
       </Routes>
