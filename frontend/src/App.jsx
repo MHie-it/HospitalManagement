@@ -87,7 +87,7 @@ function App() {
         />
 
          <Route 
-          path="/lichhen" //duong dan
+          path="/lichhenkham" //duong dan
           element={<LichHen/>}
         />
         {/* setup route */}

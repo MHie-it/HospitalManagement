@@ -29,6 +29,10 @@ app.use(cors({
 app.use("/api/auth",authRouter);
 app.use("/api/khoa",khoaRouter)
 app.use("/api/doctor",doctorRouter);
+app.use("/api/nguoiDung",nguoiDungRouter);
+app.use("/api/lichHen",lichHenRouter);
+app.use("/api/dichvu",dichVuRouter);
+app.use("/api/loaidv",loaiDVRouter);
 
 // Kết nối database trước khi start server
 connectDB()
