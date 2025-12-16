@@ -47,10 +47,10 @@ const DoctorHeader = () => {
         </Link>
 
         <Link
-          to="/lichhen"
+          to="/lichhenkham"
           className="text-inherit no-underline h-full"
         >
-          <div className={menuItemClass("/lichhen")}>
+          <div className={menuItemClass("/lichhenkham")}>
             <Calendar className="w-4 h-4 mr-2" />
             Lịch hẹn
           </div>

@@ -37,6 +37,15 @@ const Dashboard = () => {
             </Link>
 
             <Link
+                to="/loaidv"
+                className="text-inherit no-underline"
+            >
+                <div className="w-full h-12 text-xl text-black hover:bg-blue-300 flex items-center justify-center">
+                    Quản lý loại dịch vụ
+                </div>
+            </Link>  
+
+            <Link
                 to="/ServiceManagement"
                 className="text-inherit no-underline"
             >
@@ -55,16 +64,14 @@ const Dashboard = () => {
             </Link>
 
 
-            <div className="w-full h-12 text-xl text-black hover:bg-blue-300 flex items-center justify-center">
-                Quản lý bệnh nhân
-            </div>
-
-            <div className="w-full h-12 text-xl text-black hover:bg-blue-300 flex items-center justify-center">
-                Báo cáo thống kê
-            </div>
-
-
-            
+            <Link
+                to="/lichhen"
+                className="text-inherit no-underline"
+            >
+                <div className="w-full h-12 text-xl text-black hover:bg-blue-300 flex items-center justify-center">
+                    Quản lý lịch hẹn
+                </div>
+            </Link>      
             
             <Button className=" h-12 !bg-red-500 text-white text-center mb-10 hover:bg-red-700 rounded-lg mt-20 mx-auto">
                 <LogOut />

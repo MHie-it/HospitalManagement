@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Backgound from '@/components/ui/Backgound'
 import Dashboard from '@/components/ui/Dashboard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -6,77 +6,19 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Search, Plus, Edit, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
+import { dichVuService } from '@/services/dichVuService'
+import { khoaService } from '@/services/khoaService'
+import { loaiDichVuService } from '@/services/loaiDichVuService'
+
 
 const ServiceManagement = () => {
   // Dữ liệu cứng - Danh sách dịch vụ
-  const [services, setServices] = useState([
-    {
-      id: 1,
-      tenDV: 'Khám tổng quát',
-      moTa: 'Khám sức khỏe tổng quát định kỳ',
-      giaTien: 200000,
-      khoa: 'Khoa Nội',
-      khoaId: '6918c2e05ec3116888624202',
-      loaiDV: 'Ngoai Tru',
-      loaiDichVuId: '1',
-      ngayTao: '2024-01-15'
-    },
-    {
-      id: 2,
-      tenDV: 'Xét nghiệm máu',
-      moTa: 'Xét nghiệm công thức máu cơ bản',
-      giaTien: 150000,
-      khoa: 'Khoa Nội',
-      khoaId: '6918c2e05ec3116888624202',
-      loaiDV: 'Ho Tro Chuan Doan',
-      loaiDichVuId: '2',
-      ngayTao: '2024-01-16'
-    },
-    {
-      id: 3,
-      tenDV: 'Phẫu thuật ngoại khoa',
-      moTa: 'Phẫu thuật các bệnh ngoại khoa',
-      giaTien: 5000000,
-      khoa: 'Khoa Ngoại',
-      khoaId: '6918c2e05ec3116888624203',
-      loaiDV: 'Ngoai Khoa',
-      loaiDichVuId: '3',
-      ngayTao: '2024-01-17'
-    },
-    {
-      id: 4,
-      tenDV: 'Cấp cứu khẩn cấp',
-      moTa: 'Dịch vụ cấp cứu 24/7',
-      giaTien: 1000000,
-      khoa: 'Khoa Cấp Cứu',
-      khoaId: '6918c2e05ec3116888624204',
-      loaiDV: 'Cap Cuu',
-      loaiDichVuId: '4',
-      ngayTao: '2024-01-18'
-    },
-    {
-      id: 5,
-      tenDV: 'Nội soi dạ dày',
-      moTa: 'Nội soi đường tiêu hóa trên',
-      giaTien: 800000,
-      khoa: 'Khoa Nội',
-      khoaId: '6918c2e05ec3116888624202',
-      loaiDV: 'Ho Tro Chuan Doan',
-      loaiDichVuId: '2',
-      ngayTao: '2024-01-19'
-    },
-    {
-      id: 6,
-      tenDV: 'Điều trị nội trú',
-      moTa: 'Điều trị và theo dõi bệnh nhân nội trú',
-      giaTien: 2000000,
-      khoa: 'Khoa Nội',
-      khoaId: '6918c2e05ec3116888624202',
-      loaiDV: 'Noi Tru',
-      loaiDichVuId: '5',
-      ngayTao: '2024-01-20'
-    }
-  ])
+  const [services, setServices] = useState([])
+  const [loading, setLoading] = useState(false)
+
+  // State cho danh sách khoa và loại dịch vụ
+  const [khoaList, setKhoaList] = useState([])
+  const [loaiDichVuList, setLoaiDichVuList] = useState([])
 
   // State cho tìm kiếm
   const [searchTerm, setSearchTerm] = useState('')
@@ -88,38 +30,102 @@ const ServiceManagement = () => {
     tenDV: '',
     moTa: '',
     giaTien: '',
-    khoaId: '',
-    loaiDV: ''
+    Khoa: '', // Lưu ý: backend dùng "Khoa" (ObjectId)
+    LoaiDichVu: '' // Lưu ý: backend dùng "LoaiDichVu" (ObjectId)
   })
 
-  // Danh sách khoa (dữ liệu cứng)
-  const khoaList = [
-    { id: '6918c2e05ec3116888624202', tenKhoa: 'Khoa Nội' },
-    { id: '6918c2e05ec3116888624203', tenKhoa: 'Khoa Ngoại' },
-    { id: '6918c2e05ec3116888624204', tenKhoa: 'Khoa Cấp Cứu' },
-    { id: '6918c2e05ec3116888624205', tenKhoa: 'Khoa Nhi' },
-    { id: '6918c2e05ec3116888624206', tenKhoa: 'Khoa Sản' }
-  ]
+  // Load dữ liệu khi component mount
+  useEffect(() => {
+    fetchServices()
+    fetchKhoaList()
+    fetchLoaiDichVuList()
+  }, [])
 
-  // Danh sách loại dịch vụ
-  const loaiDichVuList = [
-    { id: '1', loaiDV: 'Ngoai Tru' },
-    { id: '2', loaiDV: 'Ho Tro Chuan Doan' },
-    { id: '3', loaiDV: 'Ngoai Khoa' },
-    { id: '4', loaiDV: 'Cap Cuu' },
-    { id: '5', loaiDV: 'Noi Tru' },
-    { id: '6', loaiDV: 'Khac' }
-  ]
+  // Hàm lấy danh sách dịch vụ
+  const fetchServices = async () => {
+    setLoading(true)
+    try {
+      const response = await dichVuService.getAllDichVu()
+      // Backend trả về { message, data: [...] }
+      const servicesData = response.data || []
+
+      // Map dữ liệu từ backend sang format hiển thị
+      const mappedServices = servicesData.map(service => ({
+        _id: service._id,
+        id: service._id, // Giữ id để tương thích với code cũ
+        tenDV: service.tenDV,
+        moTa: service.moTa,
+        giaTien: service.giaTien,
+        khoa: service.Khoa?.tenKhoa || '', // Khoa là object đã populate
+        khoaId: service.Khoa?._id || service.Khoa || '',
+        loaiDV: service.LoaiDichVu?.loaiDV || '', // LoaiDichVu là object đã populate
+        loaiDichVuId: service.LoaiDichVu?._id || service.LoaiDichVu || '',
+        ngayTao: service.createdAt ? new Date(service.createdAt).toISOString().split('T')[0] : ''
+      }))
+
+      setServices(mappedServices)
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách dịch vụ:', error)
+      toast.error(error.message || 'Không thể tải danh sách dịch vụ')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Hàm lấy danh sách khoa
+  const fetchKhoaList = async () => {
+    try {
+      const response = await khoaService.getAllKhoa()
+      // Xử lý nhiều format response
+      let khoaData = []
+      if (Array.isArray(response)) {
+        khoaData = response
+      } else if (response.data && Array.isArray(response.data)) {
+        khoaData = response.data
+      } else if (response.data && Array.isArray(response.data.data)) {
+        khoaData = response.data.data
+      }
+
+      console.log('Danh sách khoa:', khoaData)
+      setKhoaList(khoaData)
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách khoa:', error)
+      toast.error(error.message || 'Không thể tải danh sách khoa')
+    }
+  }
+
+
+  // Hàm lấy danh sách loại dịch vụ
+  const fetchLoaiDichVuList = async () => {
+    try {
+      const response = await loaiDichVuService.getAllLoaiDichVu()
+      // Xử lý nhiều format response
+      let loaiDVData = []
+      if (Array.isArray(response)) {
+        loaiDVData = response
+      } else if (response.data && Array.isArray(response.data)) {
+        loaiDVData = response.data
+      } else if (response.data && Array.isArray(response.data.data)) {
+        loaiDVData = response.data.data
+      }
+
+      console.log('Danh sách loại dịch vụ:', loaiDVData)
+      setLoaiDichVuList(loaiDVData)
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách loại dịch vụ:', error)
+      toast.error(error.message || 'Không thể tải danh sách loại dịch vụ')
+    }
+  }
 
   // Lọc danh sách dịch vụ
   const filteredServices = services.filter(service => {
-    const matchSearch = 
+    const matchSearch =
       service.tenDV.toLowerCase().includes(searchTerm.toLowerCase()) ||
       service.moTa.toLowerCase().includes(searchTerm.toLowerCase()) ||
       service.khoa.toLowerCase().includes(searchTerm.toLowerCase()) ||
       service.loaiDV.toLowerCase().includes(searchTerm.toLowerCase()) ||
       service.giaTien.toString().includes(searchTerm)
-    
+
     return matchSearch
   })
 
@@ -130,8 +136,8 @@ const ServiceManagement = () => {
       tenDV: '',
       moTa: '',
       giaTien: '',
-      khoaId: '',
-      loaiDV: ''
+      Khoa: '',
+      LoaiDichVu: ''
     })
     setShowForm(true)
   }
@@ -143,16 +149,16 @@ const ServiceManagement = () => {
       tenDV: service.tenDV,
       moTa: service.moTa,
       giaTien: service.giaTien.toString(),
-      khoaId: service.khoaId,
-      loaiDV: service.loaiDV
+      Khoa: service.khoaId,
+      LoaiDichVu: service.loaiDichVuId
     })
     setShowForm(true)
   }
 
   // Hàm lưu dịch vụ (thêm hoặc sửa)
-  const handleSaveService = () => {
+  const handleSaveService = async () => {
     // Validation
-    if (!formData.tenDV || !formData.moTa || !formData.giaTien || !formData.khoaId || !formData.loaiDV) {
+    if (!formData.tenDV || !formData.moTa || !formData.giaTien || !formData.Khoa || !formData.LoaiDichVu) {
       toast.error('Vui lòng nhập đầy đủ thông tin!')
       return
     }
@@ -164,67 +170,77 @@ const ServiceManagement = () => {
       return
     }
 
-    // Kiểm tra tên dịch vụ đã tồn tại (trừ khi đang sửa chính dịch vụ đó)
-    if (services.some(s => s.tenDV === formData.tenDV && s.id !== editingService?.id)) {
-      toast.error('Tên dịch vụ đã tồn tại!')
+    // Kiểm tra Khoa và LoaiDichVu có phải là ObjectId hợp lệ không
+    if (!formData.Khoa || formData.Khoa.trim() === '') {
+      toast.error('Vui lòng chọn khoa!')
       return
     }
 
-    // Tìm tên khoa
-    const khoa = khoaList.find(k => k.id === formData.khoaId)
-    const khoaName = khoa ? khoa.tenKhoa : ''
-
-    if (editingService) {
-      // Sửa dịch vụ
-      setServices(services.map(service => 
-        service.id === editingService.id
-          ? {
-              ...service,
-              tenDV: formData.tenDV,
-              moTa: formData.moTa,
-              giaTien: giaTien,
-              khoa: khoaName,
-              khoaId: formData.khoaId,
-              loaiDV: formData.loaiDV
-            }
-          : service
-      ))
-      toast.success('Cập nhật dịch vụ thành công!')
-    } else {
-      // Thêm dịch vụ mới
-      const newService = {
-        id: services.length > 0 ? Math.max(...services.map(s => s.id)) + 1 : 1,
-        tenDV: formData.tenDV,
-        moTa: formData.moTa,
-        giaTien: giaTien,
-        khoa: khoaName,
-        khoaId: formData.khoaId,
-        loaiDV: formData.loaiDV,
-        loaiDichVuId: loaiDichVuList.find(l => l.loaiDV === formData.loaiDV)?.id || '',
-        ngayTao: new Date().toISOString().split('T')[0]
-      }
-      setServices([...services, newService])
-      toast.success('Thêm dịch vụ thành công!')
+    if (!formData.LoaiDichVu || formData.LoaiDichVu.trim() === '') {
+      toast.error('Vui lòng chọn loại dịch vụ!')
+      return
     }
 
-    // Reset form và đóng form
-    setFormData({
-      tenDV: '',
-      moTa: '',
-      giaTien: '',
-      khoaId: '',
-      loaiDV: ''
-    })
-    setShowForm(false)
-    setEditingService(null)
-  }
+    try {
+      const serviceData = {
+        tenDV: formData.tenDV.trim(),
+        moTa: formData.moTa.trim(),
+        giaTien: giaTien,
+        KhoaId: formData.Khoa,  // Đổi từ Khoa sang KhoaId
+        LoaiDichVuId: formData.LoaiDichVu  // Đổi từ LoaiDichVu sang LoaiDichVuId
+      }
 
+      // Debug: Log dữ liệu gửi đi
+      console.log('Dữ liệu gửi đi:', serviceData)
+
+      if (editingService) {
+        // Sửa dịch vụ
+        const response = await dichVuService.updateDichVu(editingService._id, serviceData)
+        console.log('Response update:', response)
+        toast.success(response.message || 'Cập nhật dịch vụ thành công!')
+      } else {
+        // Thêm dịch vụ mới
+        const response = await dichVuService.createDichVu(serviceData)
+        console.log('Response create:', response)
+        toast.success(response.message || 'Thêm dịch vụ thành công!')
+      }
+
+      // Reload danh sách
+      await fetchServices()
+
+      // Reset form và đóng form
+      setFormData({
+        tenDV: '',
+        moTa: '',
+        giaTien: '',
+        Khoa: '',
+        LoaiDichVu: ''
+      })
+      setShowForm(false)
+      setEditingService(null)
+    } catch (error) {
+      console.error('Lỗi khi lưu dịch vụ:', error)
+      // Hiển thị lỗi chi tiết hơn
+      const errorMessage = error.message || error.error || 'Có lỗi xảy ra khi lưu dịch vụ!'
+      toast.error(errorMessage)
+    }
+  }
   // Hàm xóa dịch vụ
-  const handleDeleteService = (id) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa dịch vụ này?')) {
-      const service = services.find(s => s.id === id)
-      setServices(services.filter(service => service.id !== id))
-      toast.success(`Đã xóa dịch vụ "${service.tenDV}"`)
+  const handleDeleteService = async (id) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa dịch vụ này?')) {
+      return
+    }
+
+    try {
+      const service = services.find(s => s._id === id || s.id === id)
+      await dichVuService.deleteDichVu(id)
+      toast.success(`Đã xóa dịch vụ "${service?.tenDV || ''}"`)
+
+      // Reload danh sách
+      await fetchServices()
+    } catch (error) {
+      console.error('Lỗi khi xóa dịch vụ:', error)
+      toast.error(error.message || 'Có lỗi xảy ra khi xóa dịch vụ!')
     }
   }
 
@@ -257,8 +273,8 @@ const ServiceManagement = () => {
                     Quản lý và theo dõi tất cả dịch vụ trong hệ thống
                   </p>
                 </div>
-                <Button 
-                  variant="gradient" 
+                <Button
+                  variant="gradient"
                   className="flex items-center gap-2"
                   onClick={handleAddClick}
                 >
@@ -296,7 +312,7 @@ const ServiceManagement = () => {
                       <Input
                         placeholder="Nhập tên dịch vụ"
                         value={formData.tenDV}
-                        onChange={(e) => setFormData({...formData, tenDV: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, tenDV: e.target.value })}
                       />
                     </div>
                     <div>
@@ -307,7 +323,7 @@ const ServiceManagement = () => {
                         className="w-full min-h-[80px] rounded-md border border-input bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Nhập mô tả dịch vụ"
                         value={formData.moTa}
-                        onChange={(e) => setFormData({...formData, moTa: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, moTa: e.target.value })}
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
@@ -319,7 +335,7 @@ const ServiceManagement = () => {
                           type="number"
                           placeholder="Nhập giá tiền"
                           value={formData.giaTien}
-                          onChange={(e) => setFormData({...formData, giaTien: e.target.value})}
+                          onChange={(e) => setFormData({ ...formData, giaTien: e.target.value })}
                         />
                       </div>
                       <div>
@@ -328,15 +344,21 @@ const ServiceManagement = () => {
                         </label>
                         <select
                           className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          value={formData.khoaId}
-                          onChange={(e) => setFormData({...formData, khoaId: e.target.value})}
+                          value={formData.Khoa}
+                          onChange={(e) => {
+                            console.log('Chọn khoa:', e.target.value)
+                            setFormData({ ...formData, Khoa: e.target.value })
+                          }}
                         >
                           <option value="">Chọn khoa</option>
                           {khoaList.map(khoa => (
-                            <option key={khoa.id} value={khoa.id}>{khoa.tenKhoa}</option>
+                            <option key={khoa._id || khoa.id} value={khoa._id || khoa.id}>
+                              {khoa.tenKhoa}
+                            </option>
                           ))}
                         </select>
                       </div>
+
                     </div>
                     <div>
                       <label className="text-sm font-medium mb-2 block">
@@ -344,18 +366,23 @@ const ServiceManagement = () => {
                       </label>
                       <select
                         className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={formData.loaiDV}
-                        onChange={(e) => setFormData({...formData, loaiDV: e.target.value})}
+                        value={formData.LoaiDichVu}
+                        onChange={(e) => {
+                          console.log('Chọn loại dịch vụ:', e.target.value)
+                          setFormData({ ...formData, LoaiDichVu: e.target.value })
+                        }}
                       >
                         <option value="">Chọn loại dịch vụ</option>
                         {loaiDichVuList.map(loai => (
-                          <option key={loai.id} value={loai.loaiDV}>{loai.loaiDV}</option>
+                          <option key={loai._id || loai.id} value={loai._id || loai.id}>
+                            {loai.loaiDV}
+                          </option>
                         ))}
                       </select>
                     </div>
                     <div className="flex justify-end gap-2">
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         onClick={() => {
                           setShowForm(false)
                           setEditingService(null)
@@ -406,15 +433,18 @@ const ServiceManagement = () => {
                           <div className="flex flex-col items-center gap-2">
                             <p className="text-lg">Không tìm thấy dịch vụ nào</p>
                             <p className="text-sm text-gray-400">
-                              Thử thay đổi từ khóa tìm kiếm
+                              {services.length === 0
+                                ? 'Chưa có dịch vụ nào trong hệ thống'
+                                : 'Thử thay đổi từ khóa tìm kiếm'
+                              }
                             </p>
                           </div>
                         </td>
                       </tr>
                     ) : (
                       filteredServices.map((service, index) => (
-                        <tr 
-                          key={service.id} 
+                        <tr
+                          key={service._id || service.id}
                           className="border-b hover:bg-gray-50 transition-colors"
                         >
                           <td className="p-3 text-sm">{index + 1}</td>
@@ -448,7 +478,7 @@ const ServiceManagement = () => {
                               <Button
                                 variant="destructive"
                                 size="sm"
-                                onClick={() => handleDeleteService(service.id)}
+                                onClick={() => handleDeleteService(service._id || service.id)}
                                 className="flex items-center gap-1"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -482,7 +512,7 @@ const ServiceManagement = () => {
                 <div className="bg-purple-50 px-4 py-3 rounded-lg border border-purple-100">
                   <div className="text-sm text-purple-600 font-medium">Giá trung bình</div>
                   <div className="text-2xl font-bold text-purple-700 mt-1">
-                    {filteredServices.length > 0 
+                    {filteredServices.length > 0
                       ? formatPrice(filteredServices.reduce((sum, s) => sum + s.giaTien, 0) / filteredServices.length)
                       : formatPrice(0)
                     }

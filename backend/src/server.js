@@ -1,5 +1,4 @@
 import express from 'express';
-import taskRouter from './Router/taskRouter.js';
 import { connectDB } from './Config/DB.js';
 import dotenv from 'dotenv';
 import authRouter from './Router/authRouter.js';
@@ -7,6 +6,8 @@ import khoaRouter from './Router/khoaRouter.js';
 import doctorRouter from './Router/doctorRouter.js';
 import nguoiDungRouter from './Router/nguoiDungRouter.js';
 import lichHenRouter from './Router/lichHenRouter.js';
+import dichVuRouter from './Router/dichVuRouter.js';
+import loaiDVRouter from './Router/loaiDVRouter.js';
 import cors from 'cors';
 
 dotenv.config();
@@ -25,12 +26,13 @@ app.use(cors({
 }));
 
 
-app.use("/api/role",taskRouter);
 app.use("/api/auth",authRouter);
 app.use("/api/khoa",khoaRouter)
 app.use("/api/doctor",doctorRouter);
-app.use("/api/nguoi-dung", nguoiDungRouter);
-app.use("/api/lich-hen", lichHenRouter);
+app.use("/api/nguoiDung",nguoiDungRouter);
+app.use("/api/lichHen",lichHenRouter);
+app.use("/api/dichvu",dichVuRouter);
+app.use("/api/loaidv",loaiDVRouter);
 
 // Kết nối database trước khi start server
 connectDB()

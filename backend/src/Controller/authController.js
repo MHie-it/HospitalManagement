@@ -282,3 +282,82 @@ export const Login = async (request, response) => {
         });
     }
 }
+
+
+export const getAllAccounts = async (request, response) => {
+    try {
+      
+        const users = await User.find()
+            .select('-password')  
+            .populate('role', 'name')  
+            .populate({
+                path: 'BacSi',
+                select: 'tenBS email SDT ngaySinh diaChi gioiTinh',
+                populate: {
+                    path: 'Khoa',
+                    select: 'tenKhoa'
+                }
+            })
+            .populate({
+                path: 'NguoiDung',
+                select: 'hoTen email SDT ngaySinh diaChi gioiTinh'
+            })
+            .sort({ createdAt: -1 });  
+
+        response.status(200).json({
+            message: "Lấy danh sách tài khoản thành công!",
+            data: users,
+            count: users.length
+        });
+    } catch (error) {
+        console.error(error);
+        response.status(500).json({
+            message: "Lỗi khi lấy danh sách tài khoản!"
+        });
+    }
+};
+
+
+export const updateAccountStatus = async (request, response) => {
+    try {
+        const { userId } = request.params;
+        const { isActive } = request.body;
+
+        if (userId && !userId.match(/^[0-9a-fA-F]{24}$/) ) {
+            return response.status(400).json({
+                message: "userId! không hợp lệ!"
+            });
+        }
+
+        // Kiểm tra isActive có được gửi lên
+        if (typeof isActive !== 'boolean') {
+            return response.status(400).json({
+                message: "isActive phải là boolean (true/false)!"
+            });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return response.status(404).json({
+                message: "Không tìm thấy tài khoản!"
+            });
+        }
+
+        user.isActive = isActive;
+        await user.save();
+
+        response.status(200).json({
+            message: isActive ? "Đã kích hoạt tài khoản!" : "Đã đình chỉ tài khoản!",
+            data: {
+                _id: user._id,
+                username: user.username,
+                isActive: user.isActive
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        response.status(500).json({
+            message: "Lỗi khi thay đổi trạng thái tài khoản!"
+        });
+    }
+};

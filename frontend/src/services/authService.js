@@ -22,10 +22,37 @@ export const authService = {
     }
   },
 
+   registerDoctor: async (userData) => {
+    try {
+      const response = await api.post('/auth/registerDoctor', userData);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   logout: () => {
     // Xóa token và user info khỏi localStorage
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     // Có thể thêm các cleanup khác nếu cần
+  },
+
+    getAllAccounts: async () => {
+    try {
+      const response = await api.get('/auth/accounts');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  updateAccountStatus: async (userId, isActive) => {
+    try {
+      const response = await api.put(`/auth/accounts/${userId}/status`, { isActive });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   },
 };
