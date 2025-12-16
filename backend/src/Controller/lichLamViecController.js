@@ -78,12 +78,16 @@ export const createOrUpdateLichLamViec = async (request, response) => {
             const { ngayLam, caLamViecIds } = schedule;
 
             if (!ngayLam) {
+                console.log(`[createOrUpdateLichLamViec] Skipping schedule with no ngayLam:`, schedule);
                 continue;
             }
 
             // Chuyển đổi ngayLam thành Date object
-            const ngayLamDate = new Date(ngayLam);
-            ngayLamDate.setHours(0, 0, 0, 0);
+            // Sử dụng cách parse trực tiếp từ string YYYY-MM-DD để tránh vấn đề timezone
+            const [year, month, day] = ngayLam.split('-').map(Number);
+            const ngayLamDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+            
+            console.log(`[createOrUpdateLichLamViec] Processing date: ${ngayLam}, parsed as: ${ngayLamDate.toISOString()}, local: ${ngayLamDate.toLocaleDateString('vi-VN')}`);
 
             // Kiểm tra caLamViecIds có tồn tại không
             if (caLamViecIds && Array.isArray(caLamViecIds) && caLamViecIds.length > 0) {
@@ -213,13 +217,16 @@ export const getLichLamViecByDoctorIdAndDate = async (request, response) => {
             });
         }
 
-        // Chuyển đổi date thành Date object
-        const targetDate = new Date(date);
-        targetDate.setHours(0, 0, 0, 0);
+        // Chuyển đổi date thành Date object (tránh vấn đề timezone)
+        // Parse trực tiếp từ string YYYY-MM-DD
+        const [year, month, day] = date.split('-').map(Number);
+        const targetDate = new Date(year, month - 1, day, 0, 0, 0, 0);
         const startOfDay = new Date(targetDate);
         startOfDay.setHours(0, 0, 0, 0);
         const endOfDay = new Date(targetDate);
         endOfDay.setHours(23, 59, 59, 999);
+        
+        console.log(`[getLichLamViecByDoctorIdAndDate] Looking for schedule on date: ${date}, parsed as: ${targetDate.toISOString()}`);
 
         // Tìm lịch làm việc của bác sĩ trong ngày đó
         const lichLamViec = await LichLamViec.findOne({

@@ -421,3 +421,60 @@ export const changePassword = async (request, response) => {
         });
     }
 };
+
+// Quên mật khẩu - đặt lại mật khẩu trực tiếp
+export const forgotPassword = async (request, response) => {
+    try {
+        const { username, newPassword } = request.body;
+
+        if (!username || !newPassword) {
+            return response.status(400).json({
+                message: "Vui lòng nhập đầy đủ thông tin (username và mật khẩu mới)!"
+            });
+        }
+
+        if (newPassword.length < 6) {
+            return response.status(400).json({
+                message: "Mật khẩu mới phải có ít nhất 6 ký tự!"
+            });
+        }
+
+        // Tìm user theo username
+        const user = await User.findOne({ username })
+            .populate('NguoiDung', 'email')
+            .populate('BacSi', 'email');
+        
+        if (!user) {
+            return response.status(404).json({
+                message: "Username không tồn tại trong hệ thống!"
+            });
+        }
+
+        if (!user.isActive) {
+            return response.status(400).json({
+                message: "Tài khoản đã bị đình chỉ!"
+            });
+        }
+
+        // Hash mật khẩu mới
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+        // Cập nhật mật khẩu
+        user.password = hashedPassword;
+        user.resetPasswordToken = null;
+        user.resetPasswordExpires = null;
+        await user.save();
+
+        response.status(200).json({
+            message: "Đặt lại mật khẩu thành công!",
+            success: true
+        });
+    } catch (error) {
+        console.error(error);
+        response.status(500).json({
+            message: "Lỗi khi đặt lại mật khẩu!",
+            error: error.message
+        });
+    }
+};
