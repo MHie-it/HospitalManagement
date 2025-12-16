@@ -5,7 +5,6 @@ const loaiDichVuSchema = new mongoose.Schema(
         loaiDV :{
             type :String ,
             required : true,
-            enum : ['Ngoai Tru', 'Noi Tru', 'Cap Cuu', 'Ho Tro Chuan Doan', 'Ngoai Khoa', 'Khac' ],
         },
 
         moTa :{

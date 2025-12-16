@@ -11,6 +11,9 @@ import ServiceManagement from "./pages/Admin/ServiceManagement";
 import MedicalDevicesManagement from "./pages/Admin/MedicalDevicesManagement";
 import DoctorPage from "./pages/Doctor/DoctorPage";
 import LichHen from "./pages/Doctor/LichHen";
+import LichHenManagement from "./pages/Admin/LichHenManagement";
+import LoaiDichVuManagement from "./pages/Admin/LoaiDichVuManagement";
+
 
 function App() {
   return (
@@ -64,8 +67,16 @@ function App() {
           element={<ServiceManagement/>}
         />
         <Route 
+          path="/loaidv" //duong dan
+          element={<LoaiDichVuManagement/>}
+        />
+        <Route 
           path="/MedicalDevicesManagement" //duong dan
           element={<MedicalDevicesManagement/>}
+        />
+        <Route 
+          path="/lichhen" //duong dan
+          element={<LichHenManagement/>}
         />
 
         {/* doctor */}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Backgound from '@/components/ui/Backgound'
 import Dashboard from '@/components/ui/Dashboard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -6,99 +6,113 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Search, Plus, Ban, CheckCircle, XCircle, Filter, X } from 'lucide-react'
 import { toast } from 'sonner'
+import { khoaService } from '@/services/khoaService'
+import { authService } from '@/services/authService'
+
 
 
 
 const AccountManagement = () => {
-  // Dữ liệu cứng - Danh sách tài khoản
-  const [accounts, setAccounts] = useState([
-    {
-      id: 1,
-      username: 'bsnoi01',
-      hoTen: 'Nguyễn Văn A',
-      email: 'bsnoi01@hospital.com',
-      SDT: '0987654321',
-      role: 'Doctor',
-      khoa: 'Khoa Nội',
-      khoaId: '6918c2e05ec3116888624202',
-      isActive: true,
-      ngayTao: '2024-01-15'
-    },
-    {
-      id: 2,
-      username: 'bsngoai01',
-      hoTen: 'Trần Thị B',
-      email: 'bsngoai01@hospital.com',
-      SDT: '0987654322',
-      role: 'Doctor',
-      khoa: 'Khoa Ngoại',
-      khoaId: '6918c2e05ec3116888624203',
-      isActive: true,
-      ngayTao: '2024-01-16'
-    },
-    {
-      id: 3,
-      username: 'user01',
-      hoTen: 'Lê Văn C',
-      email: 'user01@gmail.com',
-      SDT: '0987654323',
-      role: 'User',
-      khoa: '-',
-      khoaId: null,
-      isActive: true,
-      ngayTao: '2024-01-17'
-    },
-    {
-      id: 4,
-      username: 'admin',
-      hoTen: 'Admin System',
-      email: 'admin@hospital.com',
-      SDT: '0987654324',
-      role: 'Admin',
-      khoa: '-',
-      khoaId: null,
-      isActive: true,
-      ngayTao: '2024-01-10'
-    },
-    {
-      id: 5,
-      username: 'bsnoi02',
-      hoTen: 'Phạm Văn D',
-      email: 'bsnoi02@hospital.com',
-      SDT: '0987654325',
-      role: 'Doctor',
-      khoa: 'Khoa Nội',
-      khoaId: '6918c2e05ec3116888624202',
-      isActive: false,
-      ngayTao: '2024-01-18'
-    }
-  ])
+  const [accounts, setAccounts] = useState([])
+  const [khoaList, setKhoaList] = useState([])
+  const [doctorList, setDoctorList] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
 
-  // State cho tìm kiếm và lọc
   const [searchTerm, setSearchTerm] = useState('')
   const [filterKhoa, setFilterKhoa] = useState('all')
-  const [filterRole, setFilterRole] = useState('all')
+  const [filterRole, setFilterRole] = useState('Doctor')
   const [filterStatus, setFilterStatus] = useState('all')
 
-  // State cho form thêm tài khoản (không dùng Dialog)
   const [showAddForm, setShowAddForm] = useState(false)
+
   const [newAccount, setNewAccount] = useState({
     username: '',
-    hoTen: '',
+    tenBS: '',
     email: '',
     SDT: '',
-    role: 'User',
+    ngaySinh: '',
+    diaChi: '',
+    role: 'Doctor',
+    gioiTinh: 'Nam',
     khoaId: '',
-    password: ''
+    password: 'hospitalHappy'
   })
 
-  // Danh sách khoa (dữ liệu cứng)
-  const khoaList = [
-    { id: '6918c2e05ec3116888624202', tenKhoa: 'Khoa Nội' },
-    { id: '6918c2e05ec3116888624203', tenKhoa: 'Khoa Ngoại' },
-    { id: '6918c2e05ec3116888624204', tenKhoa: 'Khoa Sản' },
-    { id: '6918c2e05ec3116888624205', tenKhoa: 'Khoa Nhi' }
-  ]
+  useEffect(() => {
+    fetchKhoaList()
+    fetchAccounts()
+  }, [])
+
+  const fetchKhoaList = async () => {
+    try {
+      const data = await khoaService.getAllKhoa()
+      if (Array.isArray(data)) {
+        setKhoaList(data)
+      } else if (data.data) {
+        setKhoaList(data.data)
+      } else {
+        setKhoaList([])
+      }
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách khoa:', error)
+      toast.error('Lỗi khi lấy danh sách khoa')
+    }
+  }
+
+  const fetchAccounts = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+
+      const data = await authService.getAllAccounts()
+
+      // Transform data từ BE về format FE cần
+      const transformedAccounts = transformAccountsData(data)
+      setAccounts(transformedAccounts)
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách tài khoản:', error)
+      setError(error.message || 'Không thể tải danh sách tài khoản')
+      toast.error(error.message || 'Không thể tải danh sách tài khoản')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Transform data từ BE về format FE
+  const transformAccountsData = (data) => {
+    if (Array.isArray(data)) {
+      return data.map(account => ({
+        id: account._id || account.id,
+        username: account.username,
+        hoTen: account.BacSi?.tenBS || account.NguoiDung?.hoTen || account.profile?.tenBS || account.profile?.hoTen || '-',
+        email: account.BacSi?.email || account.NguoiDung?.email || account.profile?.email || '-',
+        SDT: account.BacSi?.SDT || account.NguoiDung?.SDT || account.profile?.SDT || '-',
+        role: account.role?.[0]?.name || (account.role?.length > 0 ? account.role[0] : 'User'),
+        khoa: account.BacSi?.Khoa?.tenKhoa || account.profile?.Khoa?.tenKhoa || '-',
+        khoaId: account.BacSi?.Khoa?._id || account.profile?.Khoa?._id || null,
+        isActive: account.isActive,
+        ngayTao: account.createdAt ? new Date(account.createdAt).toISOString().split('T')[0] : '-'
+      }))
+    }
+
+    if (data.data && Array.isArray(data.data)) {
+      return data.data.map(account => ({
+        id: account._id || account.id,
+        username: account.username,
+        hoTen: account.BacSi?.tenBS || account.NguoiDung?.hoTen || account.profile?.tenBS || account.profile?.hoTen || '-',
+        email: account.BacSi?.email || account.NguoiDung?.email || account.profile?.email || '-',
+        SDT: account.BacSi?.SDT || account.NguoiDung?.SDT || account.profile?.SDT || '-',
+        role: account.role?.[0]?.name || (account.role?.length > 0 ? account.role[0] : 'User'),
+        khoa: account.BacSi?.Khoa?.tenKhoa || account.profile?.Khoa?.tenKhoa || '-',
+        khoaId: account.BacSi?.Khoa?._id || account.profile?.Khoa?._id || null,
+        isActive: account.isActive,
+        ngayTao: account.createdAt ? new Date(account.createdAt).toISOString().split('T')[0] : '-'
+      }))
+    }
+
+    return []
+  }
 
   // Lọc danh sách tài khoản
   const filteredAccounts = accounts.filter(account => {
@@ -106,7 +120,10 @@ const AccountManagement = () => {
       account.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
       account.hoTen.toLowerCase().includes(searchTerm.toLowerCase()) ||
       account.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      account.SDT.includes(searchTerm)
+      (account.khoa && account.khoa.toLowerCase().includes(searchTerm.toLowerCase()))
+
+
+    
 
     const matchKhoa = filterKhoa === 'all' || account.khoaId === filterKhoa
     const matchRole = filterRole === 'all' || account.role === filterRole
@@ -114,97 +131,85 @@ const AccountManagement = () => {
       (filterStatus === 'active' && account.isActive) ||
       (filterStatus === 'inactive' && !account.isActive)
 
-    return matchSearch && matchKhoa && matchRole && matchStatus
+    return matchSearch && matchKhoa && matchRole && matchStatus 
   })
 
-  // Hàm thêm tài khoản mới
-    // Hàm thêm tài khoản mới
-  const handleAddAccount = () => {
+  const handleAddAccount = async () => {
     // Validation
     if (!newAccount.username || !newAccount.tenBS || !newAccount.email || !newAccount.SDT || !newAccount.ngaySinh || !newAccount.diaChi) {
       toast.error('Vui lòng nhập đầy đủ thông tin!')
       return
     }
 
-    // Kiểm tra username đã tồn tại
-    if (accounts.some(acc => acc.username === newAccount.username)) {
-      toast.error('Username đã tồn tại!')
-      return
-    }
-
-    // Kiểm tra email đã tồn tại
-    if (accounts.some(acc => acc.email === newAccount.email)) {
-      toast.error('Email đã tồn tại!')
-      return
-    }
-
-    // Kiểm tra SDT đã tồn tại
-    if (accounts.some(acc => acc.SDT === newAccount.SDT)) {
-      toast.error('Số điện thoại đã tồn tại!')
-      return
-    }
-
-    // Nếu là Doctor thì phải chọn khoa
-    if (newAccount.role === 'Doctor' && !newAccount.khoaId) {
+    if (!newAccount.khoaId) {
       toast.error('Vui lòng chọn khoa cho bác sĩ!')
       return
     }
 
-    // Tìm tên khoa
-    const khoa = khoaList.find(k => k._id === newAccount.khoaId || k.id === newAccount.khoaId)
-    const khoaName = khoa ? khoa.tenKhoa : '-'
+    setLoading(true)
+    try {
+      // Dùng newAccount thay vì newDoctor
+      const response = await authService.registerDoctor({
+        username: newAccount.username,
+        tenBS: newAccount.tenBS,
+        email: newAccount.email,
+        SDT: newAccount.SDT,
+        ngaySinh: newAccount.ngaySinh,
+        diaChi: newAccount.diaChi,
+        gioiTinh: newAccount.gioiTinh,
+        khoaId: newAccount.khoaId
+      })
 
-    // Thêm tài khoản mới
-    const accountToAdd = {
-      id: accounts.length + 1,
-      username: newAccount.username,
-      hoTen: newAccount.tenBS, // Giữ hoTen cho hiển thị
-      tenBS: newAccount.tenBS,
-      email: newAccount.email,
-      SDT: newAccount.SDT,
-      ngaySinh: newAccount.ngaySinh,
-      diaChi: newAccount.diaChi,
-      gioiTinh: newAccount.gioiTinh,
-      role: newAccount.role || 'User',
-      khoa: khoaName,
-      khoaId: newAccount.khoaId || null,
-      isActive: true,
-      ngayTao: new Date().toISOString().split('T')[0]
+      toast.success('Thêm tài khoản thành công!')
+
+      //  Reset form
+      setNewAccount({
+        username: '',
+        tenBS: '',
+        email: '',
+        SDT: '',
+        ngaySinh: '',
+        diaChi: '',
+        gioiTinh: 'Nam',
+        role: 'Doctor',
+        khoaId: '',
+        password: 'hospitalHappy'
+      })
+      setShowAddForm(false)
+
+      // Reload danh sách tài khoản
+      await fetchAccounts()
+    } catch (error) {
+      console.error('Lỗi khi thêm tài khoản:', error)
+      toast.error(error.message || 'Có lỗi xảy ra khi thêm tài khoản')
+    } finally {
+      setLoading(false)
     }
-
-    setAccounts([...accounts, accountToAdd])
-    toast.success('Thêm tài khoản thành công!')
-
-    // Reset form và đóng form
-    setNewAccount({
-      username: '',
-      tenBS: '',
-      email: '',
-      SDT: '',
-      ngaySinh: '',
-      diaChi: '',
-      gioiTinh: 'Nam',
-      khoaId: '',
-      password: ''
-    })
-    setShowAddForm(false)
   }
 
-  // Hàm đình chỉ/kích hoạt tài khoản
-  const handleToggleActive = (id) => {
+  //  Hàm đình chỉ/kích hoạt
+  const handleToggleActive = async (id) => {
     const account = accounts.find(acc => acc.id === id)
     const newStatus = !account.isActive
 
-    setAccounts(accounts.map(account =>
-      account.id === id
-        ? { ...account, isActive: newStatus }
-        : account
-    ))
+    try {
+      await authService.updateAccountStatus(id, newStatus)
 
-    if (newStatus) {
-      toast.success(`Đã kích hoạt tài khoản ${account.username}`)
-    } else {
-      toast.success(`Đã đình chỉ tài khoản ${account.username}`)
+      // Update local state
+      setAccounts(accounts.map(account =>
+        account.id === id
+          ? { ...account, isActive: newStatus }
+          : account
+      ))
+
+      if (newStatus) {
+        toast.success(`Đã kích hoạt tài khoản ${account.username}`)
+      } else {
+        toast.success(`Đã đình chỉ tài khoản ${account.username}`)
+      }
+    } catch (error) {
+      console.error('Lỗi khi thay đổi trạng thái tài khoản:', error)
+      toast.error(error.message || 'Có lỗi xảy ra khi thay đổi trạng thái')
     }
   }
 
@@ -226,7 +231,7 @@ const AccountManagement = () => {
                     Quản lý tài khoản
                   </CardTitle>
                   <p className="text-sm text-gray-500 mt-1">
-                    Quản lý và theo dõi tất cả tài khoản trong hệ thống
+                    Quản lý và theo dõi tài khoản bác sĩ trong hệ thống
                   </p>
                 </div>
                 <Button
@@ -327,61 +332,39 @@ const AccountManagement = () => {
                         </select>
                       </div>
                     </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">
-                        Địa chỉ <span className="text-red-500">*</span>
-                      </label>
-                      <Input
-                        placeholder="Nhập địa chỉ"
-                        value={newAccount.diaChi}
-                        onChange={(e) => setNewAccount({ ...newAccount, diaChi: e.target.value })}
-                      />
-                    </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm font-medium mb-2 block">
-                          Vai trò <span className="text-red-500">*</span>
+                          Địa chỉ <span className="text-red-500">*</span>
+                        </label>
+                        <Input
+                          placeholder="Nhập địa chỉ"
+                          value={newAccount.diaChi}
+                          onChange={(e) => setNewAccount({ ...newAccount, diaChi: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">
+                          Khoa <span className="text-red-500">*</span>
                         </label>
                         <select
                           className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          value={newAccount.role || 'User'}
-                          onChange={(e) => setNewAccount({ ...newAccount, role: e.target.value, khoaId: e.target.value !== 'Doctor' ? '' : newAccount.khoaId })}
+                          value={newAccount.khoaId}
+                          onChange={(e) => setNewAccount({ ...newAccount, khoaId: e.target.value })}
                         >
-                          <option value="User">User</option>
-                          <option value="Doctor">Doctor</option>
-                          <option value="Admin">Admin</option>
+                          <option value="">Chọn khoa</option>
+                          {khoaList.map(khoa => (
+                            <option key={khoa._id || khoa.id} value={khoa._id || khoa.id}>
+                              {khoa.tenKhoa}
+                            </option>
+                          ))}
                         </select>
                       </div>
-                      {newAccount.role === 'Doctor' && (
-                        <div>
-                          <label className="text-sm font-medium mb-2 block">
-                            Khoa <span className="text-red-500">*</span>
-                          </label>
-                          <select
-                            className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            value={newAccount.khoaId}
-                            onChange={(e) => setNewAccount({ ...newAccount, khoaId: e.target.value })}
-                          >
-                            <option value="">Chọn khoa</option>
-                            {khoaList.map(khoa => (
-                              <option key={khoa._id || khoa.id} value={khoa._id || khoa.id}>
-                                {khoa.tenKhoa}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
+
                     </div>
+
                     <div>
-                      <label className="text-sm font-medium mb-2 block">
-                        Mật khẩu
-                      </label>
-                      <Input
-                        type="password"
-                        placeholder="Để trống sẽ dùng mật khẩu mặc định"
-                        value={newAccount.password}
-                        onChange={(e) => setNewAccount({ ...newAccount, password: e.target.value })}
-                      />
+
                       <p className="text-xs text-gray-500 mt-1">
                         Mật khẩu mặc định: hospitalHappy
                       </p>
@@ -433,19 +416,23 @@ const AccountManagement = () => {
 
               {/* Thanh tìm kiếm và lọc */}
               <div className="mb-6 space-y-4">
-                {/* Tìm kiếm */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <Input
-                    placeholder="Tìm kiếm theo username, họ tên, email, số điện thoại..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
 
                 {/* Bộ lọc */}
                 <div className="flex gap-4 items-end">
+                  <div className="flex-1">
+                    <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                      <Search className="w-4 h-4" />
+                      Seach
+                    </label>
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <Input
+                      placeholder="Tìm kiếm "
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}  
+                      className="pl-10"
+                    />
+                  </div>
+
                   <div className="flex-1">
                     <label className="text-sm font-medium mb-2 block flex items-center gap-2">
                       <Filter className="w-4 h-4" />
@@ -462,7 +449,7 @@ const AccountManagement = () => {
                       ))}
                     </select>
                   </div>
-                  <div className="flex-1">
+                  {/* <div className="flex-1">
                     <label className="text-sm font-medium mb-2 block">Lọc theo vai trò</label>
                     <select
                       className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -474,9 +461,13 @@ const AccountManagement = () => {
                       <option value="Doctor">Doctor</option>
                       <option value="User">User</option>
                     </select>
-                  </div>
+                  </div> */}
                   <div className="flex-1">
-                    <label className="text-sm font-medium mb-2 block">Lọc theo trạng thái</label>
+
+                    <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                      <Filter className="w-4 h-4" />
+                      Lọc theo trạng thái
+                    </label>
                     <select
                       className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       value={filterStatus}

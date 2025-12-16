@@ -1,47 +1,45 @@
 import api from './api';
 
-export const khoaService = {
-
-    getAllKhoa: async () => {
+export const loaiDichVuService = {
+    getAllLoaiDichVu: async () => {
         try {
-            const response = await api.get('/khoa');
+            const response = await api.get('/loaidv');
             return response.data;
         } catch (error) {
             throw error;
         }
     },
 
-   
-    getKhoaId: async (id) => {
+    getLoaiDichVuById: async (id) => {
         try {
-            const response = await api.get(`/khoa/${id}`);
+            const response = await api.get(`/loaidv/${id}`);
             return response.data;
         } catch (error) {
             throw error;
         }
     },
 
-    createKhoa: async (khoaData) => {
+    createLoaiDichVu: async (loaiDichVuData) => {
         try {
-            const response = await api.post('/khoa', khoaData);
+            const response = await api.post('/loaidv', loaiDichVuData);
             return response.data;
         } catch (error) {
             throw error;
         }
     },
 
-    updateKhoa: async (id, khoaData) => {
+    updateLoaiDichVu: async (id, loaiDichVuData) => {
         try {
-            const response = await api.put(`/khoa/${id}`, khoaData);
+            const response = await api.put(`/loaidv/${id}`, loaiDichVuData);
             return response.data;
         } catch (error) {
             throw error;
         }
     },
 
-    deleteKhoa: async (id) => {
+    deleteLoaiDichVu: async (id) => {
         try {
-            const response = await api.delete(`/khoa/${id}`);
+            const response = await api.delete(`/loaidv/${id}`);
             return response.data;
         } catch (error) {
             throw error;

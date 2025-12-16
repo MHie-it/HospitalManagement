@@ -1,47 +1,45 @@
 import api from './api';
 
-export const khoaService = {
-
-    getAllKhoa: async () => {
+export const dichVuService = {
+    getAllDichVu: async () => {
         try {
-            const response = await api.get('/khoa');
+            const response = await api.get('/dichvu');
             return response.data;
         } catch (error) {
             throw error;
         }
     },
 
-   
-    getKhoaId: async (id) => {
+    getDichVuById: async (id) => {
         try {
-            const response = await api.get(`/khoa/${id}`);
+            const response = await api.get(`/dichvu/${id}`);
             return response.data;
         } catch (error) {
             throw error;
         }
     },
 
-    createKhoa: async (khoaData) => {
+    createDichVu: async (dichVuData) => {
         try {
-            const response = await api.post('/khoa', khoaData);
+            const response = await api.post('/dichvu', dichVuData);
             return response.data;
         } catch (error) {
             throw error;
         }
     },
 
-    updateKhoa: async (id, khoaData) => {
+    updateDichVu: async (id, dichVuData) => {
         try {
-            const response = await api.put(`/khoa/${id}`, khoaData);
+            const response = await api.put(`/dichvu/${id}`, dichVuData);
             return response.data;
         } catch (error) {
             throw error;
         }
     },
 
-    deleteKhoa: async (id) => {
+    deleteDichVu: async (id) => {
         try {
-            const response = await api.delete(`/khoa/${id}`);
+            const response = await api.delete(`/dichvu/${id}`);
             return response.data;
         } catch (error) {
             throw error;

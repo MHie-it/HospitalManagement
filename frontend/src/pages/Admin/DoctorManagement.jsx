@@ -205,7 +205,7 @@ const DoctorManagement = () => {
             try {
                 await fetchAllDoctors()
 
-                // ✅ Kiểm tra bác sĩ sau khi reload
+                // Kiểm tra bác sĩ sau khi reload
                 const hasDoctors = doctorList.some(bs => {
                     const khoaId = bs.Khoa?._id || bs.Khoa
                     return khoaId === khoa._id
@@ -216,23 +216,23 @@ const DoctorManagement = () => {
                     return
                 }
 
-                // ✅ Gọi API xóa khoa
+                //  Gọi API xóa khoa
                 await khoaService.deleteKhoa(khoa._id)
                 toast.success(`Đã xóa khoa "${khoa.tenKhoa}"`)
 
-                // ✅ Reload danh sách khoa
+                // Reload danh sách khoa
                 await fetchKhoaList()
 
-                // ✅ Reload lại danh sách bác sĩ
+                // Reload lại danh sách bác sĩ
                 await fetchAllDoctors()
 
-                // ✅ Reset selectedKhoa nếu đang chọn khoa bị xóa
+                // Reset selectedKhoa nếu đang chọn khoa bị xóa
                 if (selectedKhoa && selectedKhoa._id === khoa._id) {
                     setSelectedKhoa(null)
                 }
             } catch (error) {
                 console.error('Lỗi khi xóa khoa:', error)
-                // ✅ Hiển thị message từ backend nếu có
+                //  Hiển thị message từ backend nếu có
                 const errorMessage = error.message || error.data?.message || 'Có lỗi xảy ra khi xóa khoa'
                 toast.error(errorMessage)
             }
