@@ -6,6 +6,7 @@ import authRouter from './Router/authRouter.js';
 import khoaRouter from './Router/khoaRouter.js';
 import doctorRouter from './Router/doctorRouter.js';
 import nguoiDungRouter from './Router/nguoiDungRouter.js';
+import lichHenRouter from './Router/lichHenRouter.js';
 import cors from 'cors';
 
 dotenv.config();
@@ -29,6 +30,7 @@ app.use("/api/auth",authRouter);
 app.use("/api/khoa",khoaRouter)
 app.use("/api/doctor",doctorRouter);
 app.use("/api/nguoi-dung", nguoiDungRouter);
+app.use("/api/lich-hen", lichHenRouter);
 
 // Kết nối database trước khi start server
 connectDB()
