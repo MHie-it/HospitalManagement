@@ -21,7 +21,6 @@ import {
   Stethoscope,
   MessageSquare,
   FileText,
-  CreditCard,
   Edit,
   Camera,
   CheckCircle,
@@ -36,7 +35,9 @@ import {
   Heart,
   Star,
   Sparkles,
-  CheckCircle2
+  CheckCircle2,
+  X,
+  ClipboardList
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router';
@@ -63,6 +64,9 @@ const UserPage = () => {
 
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
   const [appointmentHistory, setAppointmentHistory] = useState([]);
+  const [examResults, setExamResults] = useState([]); // Danh sách kết quả khám bệnh
+  const [showResultsModal, setShowResultsModal] = useState(false); // State để hiển thị modal
+  const [loadingResults, setLoadingResults] = useState(false);
 
   // Thêm dữ liệu gói khám sau services array 
   const healthPackages = [
@@ -205,7 +209,8 @@ const UserPage = () => {
               bacSi: lh.LichLamViec?.BacSi?.tenBS || 'N/A',
               khoa: lh.LichLamViec?.BacSi?.Khoa?.tenKhoa || 'N/A',
               dichVu: lh.DichVu?.map(dv => dv.tenDV).join(', ') || lh.moTa || 'Khám bệnh',
-              trangThai: lh.trangThai || 'Chưa xác nhận'
+              trangThai: lh.trangThai || 'Chưa xác nhận',
+              ghiChuBacSi: lh.ghiChuBacSi || '' // Thêm ghi chú của bác sĩ
             };
 
             if (lh.trangThai === 'Đã khám') {
@@ -299,12 +304,62 @@ const UserPage = () => {
   };
 
   // Handler cho các dịch vụ nhanh
-  const handleServiceClick = (serviceId) => {
+  const handleServiceClick = async (serviceId) => {
     if (serviceId === 1) {
       // Đặt lịch khám
       navigate('/dat-lich-kham');
+    } else if (serviceId === 3) {
+      // Xem kết quả khám bệnh
+      await handleViewResults();
     } else {
       toast.info(`Chức năng ${serviceId} đang được phát triển`);
+    }
+  };
+
+  // Handler để xem kết quả khám bệnh
+  const handleViewResults = async () => {
+    try {
+      setLoadingResults(true);
+      
+      if (!userId) {
+        toast.error('Không tìm thấy thông tin user!');
+        return;
+      }
+
+      // Load lại danh sách lịch hẹn để lấy kết quả mới nhất
+      const appointmentsResponse = await userService.getAppointments(userId);
+      
+      if (appointmentsResponse.data && Array.isArray(appointmentsResponse.data)) {
+        // Lọc ra các lịch hẹn đã khám và có ghi chú của bác sĩ
+        const results = appointmentsResponse.data
+          .filter(lh => lh.trangThai === 'Đã khám' && lh.ghiChuBacSi && lh.ghiChuBacSi.trim() !== '')
+          .map(lh => {
+            const ngayHen = new Date(lh.ngayHen);
+            return {
+              id: lh._id,
+              ngayHen: ngayHen.toISOString().split('T')[0],
+              gioHen: ngayHen.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+              bacSi: lh.LichLamViec?.BacSi?.tenBS || 'N/A',
+              khoa: lh.LichLamViec?.BacSi?.Khoa?.tenKhoa || 'N/A',
+              dichVu: lh.DichVu?.map(dv => dv.tenDV).join(', ') || lh.moTa || 'Khám bệnh',
+              ghiChuBacSi: lh.ghiChuBacSi || '',
+              moTa: lh.moTa || ''
+            };
+          })
+          .sort((a, b) => new Date(b.ngayHen) - new Date(a.ngayHen)); // Sắp xếp mới nhất trước
+
+        setExamResults(results);
+        setShowResultsModal(true);
+
+        if (results.length === 0) {
+          toast.info('Bạn chưa có kết quả khám bệnh nào');
+        }
+      }
+    } catch (error) {
+      console.error('Error loading exam results:', error);
+      toast.error(error.response?.data?.message || error.message || 'Không thể tải kết quả khám bệnh!');
+    } finally {
+      setLoadingResults(false);
     }
   };
 
@@ -312,7 +367,6 @@ const UserPage = () => {
     { id: 1, name: 'Đặt lịch khám', icon: Calendar, color: 'from-blue-500 to-blue-600', bgColor: 'bg-blue-50', textColor: 'text-blue-600' },
     { id: 2, name: 'Tư vấn trực tuyến', icon: MessageSquare, color: 'from-teal-500 to-teal-600', bgColor: 'bg-teal-50', textColor: 'text-teal-600' },
     { id: 3, name: 'Xem kết quả', icon: FileText, color: 'from-cyan-500 to-cyan-600', bgColor: 'bg-cyan-50', textColor: 'text-cyan-600' },
-    { id: 4, name: 'Thanh toán', icon: CreditCard, color: 'from-indigo-500 to-indigo-600', bgColor: 'bg-indigo-50', textColor: 'text-indigo-600' },
   ];
 
   const getStatusConfig = (status) => {
@@ -440,7 +494,7 @@ const UserPage = () => {
             <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
             Dịch vụ nhanh
           </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {services.map((service) => {
               const IconComponent = service.icon;
               return (
@@ -1032,6 +1086,147 @@ const UserPage = () => {
           </Tabs>
         </div>
       </div>
+
+      {/* Modal hiển thị kết quả khám bệnh */}
+      {showResultsModal && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setShowResultsModal(false)}
+        >
+          <Card
+            className="w-full max-w-4xl max-h-[90vh] overflow-auto shadow-2xl border-0 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-teal-50 sticky top-0 z-10">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                  <div className="bg-gradient-to-br from-blue-600 to-teal-600 rounded-lg p-2">
+                    <ClipboardList className="w-6 h-6 text-white" />
+                  </div>
+                  Kết quả khám bệnh
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowResultsModal(false)}
+                  className="hover:bg-red-50 hover:text-red-600"
+                >
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+              <CardDescription className="mt-2">
+                Danh sách kết quả khám bệnh đã được bác sĩ xác nhận
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              {loadingResults ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-100 to-teal-100 flex items-center justify-center animate-spin">
+                    <Activity className="w-8 h-8 text-blue-600" />
+                  </div>
+                  <p className="text-gray-600">Đang tải kết quả khám bệnh...</p>
+                </div>
+              ) : examResults.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-100 to-teal-100 flex items-center justify-center">
+                    <FileText className="w-10 h-10 text-blue-600" />
+                  </div>
+                  <p className="text-gray-600 text-lg font-medium mb-2">Chưa có kết quả khám bệnh</p>
+                  <p className="text-gray-500 text-sm">Bác sĩ sẽ cập nhật kết quả sau khi khám xong</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {examResults.map((result) => (
+                    <Card
+                      key={result.id}
+                      className="border-2 border-blue-100 hover:shadow-lg transition-all duration-300"
+                    >
+                      <CardContent className="p-6">
+                        <div className="space-y-4">
+                          {/* Header với thông tin cơ bản */}
+                          <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pb-4 border-b-2 border-blue-50">
+                            <div className="flex-1">
+                              <h3 className="text-xl font-bold text-blue-700 mb-2 flex items-center gap-2">
+                                <Stethoscope className="w-5 h-5" />
+                                {result.dichVu}
+                              </h3>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                                <div className="flex items-center gap-2 text-gray-700">
+                                  <User className="w-4 h-4 text-blue-600" />
+                                  <span><strong>Bác sĩ:</strong> {result.bacSi}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-gray-700">
+                                  <Building2 className="w-4 h-4 text-blue-600" />
+                                  <span><strong>Khoa:</strong> {result.khoa}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-gray-700">
+                                  <Calendar className="w-4 h-4 text-blue-600" />
+                                  <span>
+                                    <strong>Ngày khám:</strong>{' '}
+                                    {new Date(result.ngayHen).toLocaleDateString('vi-VN', {
+                                      weekday: 'long',
+                                      year: 'numeric',
+                                      month: 'long',
+                                      day: 'numeric'
+                                    })}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2 text-gray-700">
+                                  <Clock className="w-4 h-4 text-blue-600" />
+                                  <span><strong>Giờ khám:</strong> {result.gioHen}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 flex items-center gap-1 px-3 py-1">
+                              <CheckCircle2 className="w-4 h-4" />
+                              Đã khám
+                            </Badge>
+                          </div>
+
+                          {/* Ghi chú của bác sĩ */}
+                          <div className="bg-gradient-to-r from-blue-50 to-teal-50 rounded-xl p-5 border-2 border-blue-100">
+                            <h4 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                              <div className="bg-blue-600 rounded-lg p-1.5">
+                                <FileText className="w-4 h-4 text-white" />
+                              </div>
+                              Kết quả khám bệnh
+                            </h4>
+                            <div className="bg-white rounded-lg p-4 border border-blue-200">
+                              <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                                {result.ghiChuBacSi}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Mô tả triệu chứng ban đầu (nếu có) */}
+                          {result.moTa && (
+                            <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
+                              <h4 className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2">
+                                <AlertCircle className="w-4 h-4" />
+                                Triệu chứng ban đầu
+                              </h4>
+                              <p className="text-sm text-amber-700">{result.moTa}</p>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+            <CardFooter className="flex justify-end pt-4 border-t-2 border-blue-50 bg-gradient-to-r from-blue-50/30 to-teal-50/30">
+              <Button
+                variant="outline"
+                onClick={() => setShowResultsModal(false)}
+                className="border-blue-200 hover:bg-blue-50"
+              >
+                Đóng
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      )}
     </BackgroundUser>
   );
 };
