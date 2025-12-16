@@ -52,7 +52,7 @@ const Dashboard = () => {
                 <div className="w-full h-12 text-xl text-black hover:bg-blue-300 flex items-center justify-center">
                     Quản lý loại dịch vụ
                 </div>
-            </Link>  
+            </Link>
 
             <Link
                 to="/ServiceManagement"

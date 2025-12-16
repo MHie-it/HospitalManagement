@@ -422,7 +422,6 @@ const ServiceManagement = () => {
                       <th className="p-3 text-left font-semibold text-sm text-gray-700">Giá tiền</th>
                       <th className="p-3 text-left font-semibold text-sm text-gray-700">Khoa</th>
                       <th className="p-3 text-left font-semibold text-sm text-gray-700">Loại dịch vụ</th>
-                      <th className="p-3 text-left font-semibold text-sm text-gray-700">Ngày tạo</th>
                       <th className="p-3 text-left font-semibold text-sm text-gray-700">Thao tác</th>
                     </tr>
                   </thead>
@@ -463,7 +462,7 @@ const ServiceManagement = () => {
                               {service.loaiDV}
                             </span>
                           </td>
-                          <td className="p-3 text-sm text-gray-600">{service.ngayTao}</td>
+                          
                           <td className="p-3">
                             <div className="flex gap-2">
                               <Button
