@@ -1,13 +1,28 @@
 import React from 'react'
 import { Button } from './button'
 import { LogOut, Home, Calendar, CalendarClock, History, UserCircle } from 'lucide-react'
-import { Link, useLocation } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
+import { authService } from '@/services/authService'
+import { toast } from 'sonner'
 
 const DoctorHeader = () => {
   const location = useLocation()
+  const navigate = useNavigate()
 
   const isActive = (path) => {
     return location.pathname === path
+  }
+
+  // Handler cho đăng xuất
+  const handleLogout = () => {
+    // Xóa token và user info
+    authService.logout();
+    
+    // Hiển thị thông báo
+    toast.success('Đăng xuất thành công!');
+    
+    // Chuyển hướng về trang login
+    navigate('/');
   }
 
   const menuItemClass = (path) => {
@@ -72,6 +87,7 @@ const DoctorHeader = () => {
         </Link>
       </nav>
         <Button 
+          onClick={handleLogout}
           className="h-10  !bg-red-500 text-white hover:bg-red-600 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg px-4"
         >
           <LogOut className="w-4 h-4" />

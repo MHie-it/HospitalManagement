@@ -264,7 +264,9 @@ export const Login = async (request, response) => {
             role: user.role,
             isActive: user.isActive,
             userType: userType,
-            profile: profileInfo
+            profile: profileInfo,
+            BacSi: user.BacSi || null, // Thêm BacSi ID cho Doctor
+            NguoiDung: user.NguoiDung || null // Thêm NguoiDung ID cho User
         };
 
         response.status(200).json({

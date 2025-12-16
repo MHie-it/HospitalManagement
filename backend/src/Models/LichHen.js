@@ -23,7 +23,6 @@ const lichHenSchema = new mongoose.Schema(
         DichVu : [{
             type : mongoose.Schema.Types.ObjectId,
             ref : 'DichVu',
-            required : true,
         }],
 
         moTa: {

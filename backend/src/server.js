@@ -5,6 +5,8 @@ import dotenv from 'dotenv';
 import authRouter from './Router/authRouter.js';
 import khoaRouter from './Router/khoaRouter.js';
 import doctorRouter from './Router/doctorRouter.js';
+import nguoiDungRouter from './Router/nguoiDungRouter.js';
+import lichHenRouter from './Router/lichHenRouter.js';
 import cors from 'cors';
 
 dotenv.config();
@@ -13,8 +15,6 @@ dotenv.config();
 const app = express();
 
 const PORT = process.env.PORT || 5001;
-
-connectDB();
 
 app.use(express.json());
 
@@ -29,11 +29,19 @@ app.use("/api/role",taskRouter);
 app.use("/api/auth",authRouter);
 app.use("/api/khoa",khoaRouter)
 app.use("/api/doctor",doctorRouter);
+app.use("/api/nguoi-dung", nguoiDungRouter);
+app.use("/api/lich-hen", lichHenRouter);
 
-connectDB().then(() =>{
-    app.listen(PORT, () => {
-        console.log('Server is running on ${PORT}');
+// Kết nối database trước khi start server
+connectDB()
+    .then(() => {
+        app.listen(PORT, () => {
+            console.log(`Server is running on ${PORT}`);
+        });
+    })
+    .catch((error) => {
+        console.error('Failed to start server:', error);
+        process.exit(1);
     });
-});
 
 

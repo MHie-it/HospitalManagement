@@ -1,104 +1,104 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router'
+import { toast } from 'sonner'
 import Backgound from '@/components/ui/Backgound'
 import DoctorHeader from '@/components/ui/DoctorHeader'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Search, Calendar, Clock, User, Phone, Mail, MapPin, Eye, X, CheckCircle2, AlertCircle, CalendarCheck, XCircle } from 'lucide-react'
+import { Search, Calendar, Clock, User, Phone, Mail, MapPin, Eye, X, CheckCircle2, AlertCircle, CalendarCheck, XCircle, Stethoscope, Building2 } from 'lucide-react'
+import { userService } from '@/services/userService'
 
 const LichHen = () => {
+  const navigate = useNavigate();
   const [selectedAppointment, setSelectedAppointment] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
+  const [appointments, setAppointments] = useState([])
+  const [loading, setLoading] = useState(false)
 
-  // Dữ liệu cứng - Danh sách lịch hẹn
-  const appointments = [
-    {
-      id: 1,
-      patientName: 'Nguyễn Văn A',
-      patientPhone: '0901234567',
-      patientEmail: 'nguyenvana@email.com',
-      appointmentDate: '2024-12-20',
-      appointmentTime: '09:00',
-      status: 'pending',
-      reason: 'Khám tổng quát',
-      address: '123 Đường ABC, Quận 1, TP.HCM',
-      notes: 'Bệnh nhân có tiền sử dị ứng thuốc',
-      age: 35,
-      gender: 'Nam'
-    },
-    {
-      id: 2,
-      patientName: 'Trần Thị B',
-      patientPhone: '0912345678',
-      patientEmail: 'tranthib@email.com',
-      appointmentDate: '2024-12-20',
-      appointmentTime: '10:30',
-      status: 'confirmed',
-      reason: 'Tái khám sau phẫu thuật',
-      address: '456 Đường XYZ, Quận 2, TP.HCM',
-      notes: 'Cần kiểm tra vết thương',
-      age: 28,
-      gender: 'Nữ'
-    },
-    {
-      id: 3,
-      patientName: 'Lê Văn C',
-      patientPhone: '0923456789',
-      patientEmail: 'levanc@email.com',
-      appointmentDate: '2024-12-20',
-      appointmentTime: '14:00',
-      status: 'pending',
-      reason: 'Khám chuyên khoa tim mạch',
-      address: '789 Đường DEF, Quận 3, TP.HCM',
-      notes: '',
-      age: 45,
-      gender: 'Nam'
-    },
-    {
-      id: 4,
-      patientName: 'Phạm Thị D',
-      patientPhone: '0934567890',
-      patientEmail: 'phamthid@email.com',
-      appointmentDate: '2024-12-21',
-      appointmentTime: '08:30',
-      status: 'confirmed',
-      reason: 'Khám sức khỏe định kỳ',
-      address: '321 Đường GHI, Quận 4, TP.HCM',
-      notes: 'Bệnh nhân mới',
-      age: 52,
-      gender: 'Nữ'
-    },
-    {
-      id: 5,
-      patientName: 'Hoàng Văn E',
-      patientPhone: '0945678901',
-      patientEmail: 'hoangvane@email.com',
-      appointmentDate: '2024-12-21',
-      appointmentTime: '11:00',
-      status: 'completed',
-      reason: 'Khám tổng quát',
-      address: '654 Đường JKL, Quận 5, TP.HCM',
-      notes: 'Đã hoàn thành khám',
-      age: 40,
-      gender: 'Nam'
-    },
-    {
-      id: 6,
-      patientName: 'Võ Thị F',
-      patientPhone: '0956789012',
-      patientEmail: 'vothif@email.com',
-      appointmentDate: '2024-12-21',
-      appointmentTime: '15:30',
-      status: 'cancelled',
-      reason: 'Khám chuyên khoa',
-      address: '987 Đường MNO, Quận 6, TP.HCM',
-      notes: 'Bệnh nhân hủy lịch',
-      age: 33,
-      gender: 'Nữ'
-    }
-  ]
+  // Load lịch hẹn từ MongoDB
+  useEffect(() => {
+    const loadAppointments = async () => {
+      try {
+        setLoading(true);
+        // Lấy user từ localStorage
+        const userStr = localStorage.getItem('user');
+        if (!userStr) {
+          toast.error('Vui lòng đăng nhập lại!');
+          navigate('/');
+          return;
+        }
+
+        const user = JSON.parse(userStr);
+        // Lấy doctorId từ user.BacSi hoặc user.profile._id (nếu user là bác sĩ)
+        let doctorId = user.BacSi || user.bacSi;
+        
+        // Nếu không có, thử lấy từ profile (object BacSi)
+        if (!doctorId && user.profile && user.profile._id) {
+          doctorId = user.profile._id;
+        }
+
+        if (!doctorId) {
+          console.error('User object:', user);
+          toast.error('Không tìm thấy thông tin bác sĩ! Vui lòng đăng nhập lại.');
+          return;
+        }
+
+        console.log('Loading appointments for doctorId:', doctorId);
+        console.log('User object:', user);
+
+        // Gọi API để lấy lịch hẹn của bác sĩ
+        const response = await userService.getAppointmentsByDoctor(doctorId);
+        
+        console.log('API Response:', response);
+        console.log('Appointments data:', response.data);
+        
+        if (response.data && Array.isArray(response.data)) {
+          // Transform data từ MongoDB format sang format hiện tại
+          const transformedData = response.data.map(lh => {
+            const ngayHen = new Date(lh.ngayHen);
+            const age = lh.NguoiDung?.ngaySinh 
+              ? Math.floor((new Date() - new Date(lh.NguoiDung.ngaySinh)) / (365.25 * 24 * 60 * 60 * 1000))
+              : 0;
+
+            // Map status từ tiếng Việt sang tiếng Anh
+            let status = 'pending';
+            if (lh.trangThai === 'Đã xác nhận') status = 'confirmed';
+            else if (lh.trangThai === 'Đã khám') status = 'completed';
+            else if (lh.trangThai === 'Đã hủy') status = 'cancelled';
+
+            return {
+              id: lh._id,
+              patientName: lh.NguoiDung?.hoTen || 'N/A',
+              patientPhone: lh.NguoiDung?.SDT || 'N/A',
+              patientEmail: lh.NguoiDung?.email || 'N/A',
+              appointmentDate: ngayHen.toISOString().split('T')[0],
+              appointmentTime: ngayHen.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+              status: status,
+              reason: lh.DichVu?.map(dv => dv.tenDV).join(', ') || lh.moTa || 'Khám bệnh',
+              address: lh.NguoiDung?.diaChi || 'N/A',
+              notes: lh.moTa || '',
+              age: age,
+              gender: lh.NguoiDung?.gioiTinh || 'N/A',
+              bacSi: lh.LichLamViec?.BacSi?.tenBS || 'N/A',
+              khoa: lh.LichLamViec?.BacSi?.Khoa?.tenKhoa || 'N/A'
+            };
+          });
+          
+          setAppointments(transformedData);
+        }
+      } catch (error) {
+        console.error('Error loading appointments:', error);
+        toast.error(error.response?.data?.message || error.message || 'Không thể tải danh sách lịch hẹn!');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAppointments();
+  }, [navigate]);
 
   // Lọc lịch hẹn
   const filteredAppointments = appointments.filter(appointment => {
@@ -357,7 +357,7 @@ const LichHen = () => {
                             </div>
 
                             {/* Thông tin lịch hẹn */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-4">
                               <div className="flex items-center gap-2 text-gray-700">
                                 <div className="bg-blue-50 rounded-lg p-2">
                                   <Calendar className="w-4 h-4 text-blue-600" />
@@ -383,6 +383,24 @@ const LichHen = () => {
                                 <div>
                                   <p className="text-xs text-gray-500">Số điện thoại</p>
                                   <p className="text-sm font-semibold">{appointment.patientPhone}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 text-gray-700">
+                                <div className="bg-teal-50 rounded-lg p-2">
+                                  <Stethoscope className="w-4 h-4 text-teal-600" />
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-500">Bác sĩ</p>
+                                  <p className="text-sm font-semibold line-clamp-1">{appointment.bacSi}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 text-gray-700">
+                                <div className="bg-indigo-50 rounded-lg p-2">
+                                  <Building2 className="w-4 h-4 text-indigo-600" />
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-500">Khoa</p>
+                                  <p className="text-sm font-semibold line-clamp-1">{appointment.khoa}</p>
                                 </div>
                               </div>
                               <div className="flex items-center gap-2 text-gray-700">
@@ -506,6 +524,20 @@ const LichHen = () => {
                     <div className="bg-white rounded-lg p-4">
                       <p className="text-sm text-gray-500 mb-1">Giờ hẹn</p>
                       <p className="text-base font-semibold text-gray-900">{selectedAppointment.appointmentTime}</p>
+                    </div>
+                    <div className="bg-white rounded-lg p-4">
+                      <p className="text-sm text-gray-500 mb-1 flex items-center gap-1">
+                        <Stethoscope className="w-4 h-4" />
+                        Bác sĩ được chọn
+                      </p>
+                      <p className="text-base font-semibold text-gray-900">{selectedAppointment.bacSi}</p>
+                    </div>
+                    <div className="bg-white rounded-lg p-4">
+                      <p className="text-sm text-gray-500 mb-1 flex items-center gap-1">
+                        <Building2 className="w-4 h-4" />
+                        Khoa
+                      </p>
+                      <p className="text-base font-semibold text-gray-900">{selectedAppointment.khoa}</p>
                     </div>
                     <div className="bg-white rounded-lg p-4">
                       <p className="text-sm text-gray-500 mb-1">Lý do khám</p>
