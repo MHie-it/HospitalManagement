@@ -157,6 +157,7 @@ export const createLichHen = async (request, response) => {
 
         // Populate để trả về đầy đủ thông tin
         const populatedLichHen = await LichHen.findById(savedLichHen._id)
+            .populate('NguoiDung', 'hoTen SDT email diaChi gioiTinh ngaySinh')
             .populate({
                 path: 'LichLamViec',
                 populate: {
@@ -270,3 +271,81 @@ export const getLichHenByDoctorId = async (request, response) => {
     }
 };
 
+// Cập nhật trạng thái và ghi chú của bác sĩ cho lịch hẹn
+export const updateLichHen = async (request, response) => {
+    try {
+        const { id } = request.params;
+        const { trangThai, ghiChuBacSi } = request.body;
+
+        if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
+            return response.status(400).json({
+                message: "ID lịch hẹn không hợp lệ!"
+            });
+        }
+
+        // Kiểm tra lịch hẹn có tồn tại không
+        const lichHen = await LichHen.findById(id);
+        if (!lichHen) {
+            return response.status(404).json({
+                message: "Không tìm thấy lịch hẹn!"
+            });
+        }
+
+        // Cập nhật dữ liệu
+        const updateData = {};
+        if (trangThai) {
+            // Validate trạng thái
+            const validStatuses = ['Đã xác nhận', 'Chưa xác nhận', 'Đã hủy', 'Đã khám'];
+            if (!validStatuses.includes(trangThai)) {
+                return response.status(400).json({
+                    message: "Trạng thái không hợp lệ!"
+                });
+            }
+            updateData.trangThai = trangThai;
+        }
+        if (ghiChuBacSi !== undefined) {
+            updateData.ghiChuBacSi = ghiChuBacSi;
+        }
+
+        // Cập nhật lịch hẹn
+        const updatedLichHen = await LichHen.findByIdAndUpdate(
+            id,
+            updateData,
+            { new: true, runValidators: true }
+        )
+            .populate('NguoiDung', 'hoTen SDT email diaChi gioiTinh ngaySinh')
+            .populate({
+                path: 'LichLamViec',
+                populate: {
+                    path: 'BacSi',
+                    select: 'tenBS',
+                    populate: {
+                        path: 'Khoa',
+                        select: 'tenKhoa'
+                    }
+                }
+            })
+            .populate('DichVu', 'tenDV giaTien')
+            .select('-__v');
+
+        // Format Decimal128 thành số
+        const formattedLichHen = {
+            ...updatedLichHen.toObject(),
+            DichVu: updatedLichHen.DichVu.map(dv => ({
+                ...dv.toObject(),
+                giaTien: parseFloat(dv.giaTien.toString())
+            }))
+        };
+
+        response.status(200).json({
+            message: "Cập nhật lịch hẹn thành công!",
+            data: formattedLichHen
+        });
+    } catch (error) {
+        console.error(error);
+        response.status(500).json({
+            message: "Lỗi khi cập nhật lịch hẹn!",
+            error: error.message
+        });
+    }
+};

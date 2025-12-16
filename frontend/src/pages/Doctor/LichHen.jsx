@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Search, Calendar, Clock, User, Phone, Mail, MapPin, Eye, X, CheckCircle2, AlertCircle, CalendarCheck, XCircle, Stethoscope, Building2 } from 'lucide-react'
+import { Search, Calendar, Clock, User, Phone, Mail, MapPin, Eye, X, CheckCircle2, AlertCircle, CalendarCheck, XCircle, Stethoscope, Building2, FileText } from 'lucide-react'
 import { userService } from '@/services/userService'
 
 const LichHen = () => {
@@ -17,100 +17,142 @@ const LichHen = () => {
   const [filterStatus, setFilterStatus] = useState('all')
   const [appointments, setAppointments] = useState([])
   const [loading, setLoading] = useState(false)
+  const [doctorNote, setDoctorNote] = useState('')
+  const [updating, setUpdating] = useState(false)
 
   // Load lịch hẹn từ MongoDB
-  useEffect(() => {
-    const loadAppointments = async () => {
-      try {
-        setLoading(true);
-        // Lấy user từ localStorage
-        const userStr = localStorage.getItem('user');
-        if (!userStr) {
-          toast.error('Vui lòng đăng nhập lại!');
-          navigate('/');
-          return;
-        }
-
-        const user = JSON.parse(userStr);
-        // Lấy doctorId từ user.BacSi hoặc user.profile._id (nếu user là bác sĩ)
-        let doctorId = user.BacSi || user.bacSi;
-        
-        // Nếu không có, thử lấy từ profile (object BacSi)
-        if (!doctorId && user.profile && user.profile._id) {
-          doctorId = user.profile._id;
-        }
-
-        if (!doctorId) {
-          console.error('User object:', user);
-          toast.error('Không tìm thấy thông tin bác sĩ! Vui lòng đăng nhập lại.');
-          return;
-        }
-
-        console.log('Loading appointments for doctorId:', doctorId);
-        console.log('User object:', user);
-
-        // Gọi API để lấy lịch hẹn của bác sĩ
-        const response = await userService.getAppointmentsByDoctor(doctorId);
-        
-        console.log('API Response:', response);
-        console.log('Appointments data:', response.data);
-        
-        if (response.data && Array.isArray(response.data)) {
-          // Transform data từ MongoDB format sang format hiện tại
-          const transformedData = response.data.map(lh => {
-            const ngayHen = new Date(lh.ngayHen);
-            const age = lh.NguoiDung?.ngaySinh 
-              ? Math.floor((new Date() - new Date(lh.NguoiDung.ngaySinh)) / (365.25 * 24 * 60 * 60 * 1000))
-              : 0;
-
-            // Map status từ tiếng Việt sang tiếng Anh
-            let status = 'pending';
-            if (lh.trangThai === 'Đã xác nhận') status = 'confirmed';
-            else if (lh.trangThai === 'Đã khám') status = 'completed';
-            else if (lh.trangThai === 'Đã hủy') status = 'cancelled';
-
-            return {
-              id: lh._id,
-              patientName: lh.NguoiDung?.hoTen || 'N/A',
-              patientPhone: lh.NguoiDung?.SDT || 'N/A',
-              patientEmail: lh.NguoiDung?.email || 'N/A',
-              appointmentDate: ngayHen.toISOString().split('T')[0],
-              appointmentTime: ngayHen.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-              status: status,
-              reason: lh.DichVu?.map(dv => dv.tenDV).join(', ') || lh.moTa || 'Khám bệnh',
-              address: lh.NguoiDung?.diaChi || 'N/A',
-              notes: lh.moTa || '',
-              age: age,
-              gender: lh.NguoiDung?.gioiTinh || 'N/A',
-              bacSi: lh.LichLamViec?.BacSi?.tenBS || 'N/A',
-              khoa: lh.LichLamViec?.BacSi?.Khoa?.tenKhoa || 'N/A'
-            };
-          });
-          
-          setAppointments(transformedData);
-        }
-      } catch (error) {
-        console.error('Error loading appointments:', error);
-        toast.error(error.response?.data?.message || error.message || 'Không thể tải danh sách lịch hẹn!');
-      } finally {
-        setLoading(false);
+  const loadAppointments = async () => {
+    try {
+      setLoading(true);
+      // Lấy user từ localStorage
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        toast.error('Vui lòng đăng nhập lại!');
+        navigate('/');
+        return;
       }
-    };
 
+      const user = JSON.parse(userStr);
+      // Lấy doctorId từ user.BacSi hoặc user.profile._id (nếu user là bác sĩ)
+      let doctorId = user.BacSi || user.bacSi;
+      
+      // Nếu không có, thử lấy từ profile (object BacSi)
+      if (!doctorId && user.profile && user.profile._id) {
+        doctorId = user.profile._id;
+      }
+
+      if (!doctorId) {
+        console.error('User object:', user);
+        toast.error('Không tìm thấy thông tin bác sĩ! Vui lòng đăng nhập lại.');
+        return;
+      }
+
+      console.log('Loading appointments for doctorId:', doctorId);
+      console.log('User object:', user);
+
+      // Gọi API để lấy lịch hẹn của bác sĩ
+      const response = await userService.getAppointmentsByDoctor(doctorId);
+      
+      console.log('API Response:', response);
+      console.log('Appointments data:', response.data);
+      
+      if (response.data && Array.isArray(response.data)) {
+        // Transform data từ MongoDB format sang format hiện tại
+        const transformedData = response.data.map(lh => {
+          const ngayHen = new Date(lh.ngayHen);
+          const age = lh.NguoiDung?.ngaySinh 
+            ? Math.floor((new Date() - new Date(lh.NguoiDung.ngaySinh)) / (365.25 * 24 * 60 * 60 * 1000))
+            : 0;
+
+          // Map status từ tiếng Việt sang tiếng Anh
+          let status = 'pending';
+          if (lh.trangThai === 'Đã xác nhận') status = 'confirmed';
+          else if (lh.trangThai === 'Đã khám') status = 'completed';
+          else if (lh.trangThai === 'Đã hủy') status = 'cancelled';
+
+          return {
+            id: lh._id,
+            patientName: lh.NguoiDung?.hoTen || 'N/A',
+            patientPhone: lh.NguoiDung?.SDT || 'N/A',
+            patientEmail: lh.NguoiDung?.email || 'N/A',
+            appointmentDate: ngayHen.toISOString().split('T')[0],
+            appointmentTime: ngayHen.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+            status: status,
+            reason: lh.DichVu?.map(dv => dv.tenDV).join(', ') || lh.moTa || 'Khám bệnh',
+            address: lh.NguoiDung?.diaChi || 'N/A',
+            notes: lh.moTa || '',
+            doctorNote: lh.ghiChuBacSi || '',
+            age: age,
+            gender: lh.NguoiDung?.gioiTinh || 'N/A',
+            bacSi: lh.LichLamViec?.BacSi?.tenBS || 'N/A',
+            khoa: lh.LichLamViec?.BacSi?.Khoa?.tenKhoa || 'N/A'
+          };
+        });
+        
+        setAppointments(transformedData);
+      }
+    } catch (error) {
+      console.error('Error loading appointments:', error);
+      toast.error(error.response?.data?.message || error.message || 'Không thể tải danh sách lịch hẹn!');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     loadAppointments();
   }, [navigate]);
 
+  // Hàm refresh danh sách lịch hẹn
+  const handleRefresh = () => {
+    loadAppointments();
+  };
+
+  // Hàm xử lý khi mở modal chi tiết
+  const handleOpenDetail = (appointment) => {
+    setSelectedAppointment(appointment);
+    setDoctorNote(appointment.doctorNote || '');
+  };
+
+  // Hàm xử lý xác nhận lịch hẹn (đổi thành "Đã khám")
+  const handleConfirmAppointment = async () => {
+    if (!selectedAppointment) return;
+
+    try {
+      setUpdating(true);
+      const response = await userService.updateAppointment(selectedAppointment.id, {
+        trangThai: 'Đã khám',
+        ghiChuBacSi: doctorNote
+      });
+
+      if (response.data) {
+        toast.success(response.message || 'Xác nhận lịch hẹn thành công!');
+        // Cập nhật lại danh sách
+        await loadAppointments();
+        // Đóng modal
+        setSelectedAppointment(null);
+        setDoctorNote('');
+      }
+    } catch (error) {
+      console.error('Error confirming appointment:', error);
+      toast.error(error.response?.data?.message || error.message || 'Có lỗi xảy ra khi xác nhận lịch hẹn!');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   // Lọc lịch hẹn
   const filteredAppointments = appointments.filter(appointment => {
-    const matchesSearch = 
+    const matchesSearch = (
       appointment.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       appointment.patientPhone.includes(searchTerm) ||
       appointment.reason.toLowerCase().includes(searchTerm.toLowerCase())
+    );
     
-    const matchesFilter = filterStatus === 'all' || appointment.status === filterStatus
+    const matchesFilter = filterStatus === 'all' || appointment.status === filterStatus;
     
-    return matchesSearch && matchesFilter
-  })
+    return matchesSearch && matchesFilter;
+  });
 
   // Thống kê
   const stats = {
@@ -272,6 +314,18 @@ const LichHen = () => {
                       />
                     </div>
 
+                    {/* Refresh Button */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRefresh}
+                      disabled={loading}
+                      className="h-11"
+                    >
+                      <Calendar className="w-4 h-4 mr-2" />
+                      {loading ? 'Đang tải...' : 'Làm mới'}
+                    </Button>
+
                     {/* Filter Buttons */}
                     <div className="flex gap-2 flex-wrap">
                       <Button
@@ -334,7 +388,7 @@ const LichHen = () => {
                     <Card 
                       key={appointment.id}
                       className="hover:shadow-xl transition-all duration-300 cursor-pointer border-l-4 border-l-blue-500 hover:border-l-blue-600 group"
-                      onClick={() => setSelectedAppointment(appointment)}
+                      onClick={() => handleOpenDetail(appointment)}
                     >
                       <CardContent className="p-6">
                         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
@@ -421,7 +475,7 @@ const LichHen = () => {
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation()
-                              setSelectedAppointment(appointment)
+                              handleOpenDetail(appointment)
                             }}
                             className="lg:ml-4 w-full lg:w-auto group-hover:bg-blue-50 group-hover:border-blue-300 group-hover:text-blue-700 transition-colors"
                           >
@@ -442,7 +496,10 @@ const LichHen = () => {
         {selectedAppointment && (
           <div 
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
-            onClick={() => setSelectedAppointment(null)}
+            onClick={() => {
+              setSelectedAppointment(null);
+              setDoctorNote('');
+            }}
           >
             <Card 
               className="w-full max-w-3xl max-h-[90vh] overflow-auto shadow-2xl border-0 animate-in zoom-in-95 duration-200 hide-scrollbar hide-scrollbar"
@@ -459,7 +516,10 @@ const LichHen = () => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => setSelectedAppointment(null)}
+                    onClick={() => {
+              setSelectedAppointment(null);
+              setDoctorNote('');
+            }}
                     className="hover:bg-red-50 hover:text-red-600"
                   >
                     <X className="w-5 h-5" />
@@ -553,29 +613,58 @@ const LichHen = () => {
                   </div>
                 </div>
 
-                {/* Ghi chú */}
+                {/* Ghi chú của bệnh nhân */}
                 {selectedAppointment.notes && (
                   <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl p-5">
-                    <h3 className="text-lg font-bold text-gray-900 mb-4">Ghi chú</h3>
+                    <h3 className="text-lg font-bold text-gray-900 mb-4">Ghi chú của bệnh nhân</h3>
                     <div className="bg-white rounded-lg p-4">
                       <p className="text-sm text-gray-700 leading-relaxed">{selectedAppointment.notes}</p>
                     </div>
                   </div>
                 )}
 
+                {/* Ghi chú của bác sĩ */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <div className="bg-blue-600 rounded-lg p-2">
+                      <FileText className="w-5 h-5 text-white" />
+                    </div>
+                    Ghi chú của bác sĩ
+                  </h3>
+                  <textarea
+                    value={doctorNote}
+                    onChange={(e) => setDoctorNote(e.target.value)}
+                    placeholder="Nhập ghi chú của bác sĩ về bệnh nhân này..."
+                    rows={4}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    disabled={updating || selectedAppointment.status === 'completed'}
+                  />
+                  {selectedAppointment.doctorNote && selectedAppointment.status === 'completed' && (
+                    <p className="text-xs text-gray-500 mt-2">Ghi chú đã được lưu</p>
+                  )}
+                </div>
+
                 {/* Actions */}
                 <div className="flex gap-3 pt-4 border-t">
                   <Button
                     variant="outline"
                     className="flex-1 h-11"
-                    onClick={() => setSelectedAppointment(null)}
+                    onClick={() => {
+                      setSelectedAppointment(null);
+                      setDoctorNote('');
+                    }}
+                    disabled={updating}
                   >
                     Đóng
                   </Button>
-                  {selectedAppointment.status === 'pending' && (
-                    <Button className="flex-1 h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+                  {(selectedAppointment.status === 'pending' || selectedAppointment.status === 'confirmed') && (
+                    <Button 
+                      className="flex-1 h-11 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700"
+                      onClick={handleConfirmAppointment}
+                      disabled={updating}
+                    >
                       <CheckCircle2 className="w-4 h-4 mr-2" />
-                      Xác nhận lịch hẹn
+                      {updating ? 'Đang xử lý...' : 'Đã khám'}
                     </Button>
                   )}
                 </div>

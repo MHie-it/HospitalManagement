@@ -61,45 +61,8 @@ const UserPage = () => {
     imgURL: ''
   });
 
-  const [upcomingAppointments] = useState([
-    {
-      id: 1,
-      ngayHen: '2024-12-20',
-      gioHen: '09:00',
-      bacSi: 'BS. Nguyễn Văn B',
-      khoa: 'Khoa Nội tổng quát',
-      dichVu: 'Khám tổng quát',
-      trangThai: 'Đã xác nhận'
-    },
-    {
-      id: 2,
-      ngayHen: '2024-12-25',
-      gioHen: '14:30',
-      bacSi: 'BS. Trần Thị C',
-      khoa: 'Khoa Dinh dưỡng',
-      dichVu: 'Tư vấn dinh dưỡng',
-      trangThai: 'Chưa xác nhận'
-    }
-  ]);
-
-  const [appointmentHistory] = useState([
-    {
-      id: 1,
-      ngayHen: '2024-11-15',
-      bacSi: 'BS. Lê Văn D',
-      khoa: 'Khoa Tim mạch',
-      dichVu: 'Khám tim mạch',
-      trangThai: 'Đã khám'
-    },
-    {
-      id: 2,
-      ngayHen: '2024-10-20',
-      bacSi: 'BS. Phạm Thị E',
-      khoa: 'Khoa Xét nghiệm',
-      dichVu: 'Xét nghiệm máu',
-      trangThai: 'Đã khám'
-    }
-  ]);
+  const [upcomingAppointments, setUpcomingAppointments] = useState([]);
+  const [appointmentHistory, setAppointmentHistory] = useState([]);
 
   // Thêm dữ liệu gói khám sau services array 
   const healthPackages = [
@@ -185,7 +148,7 @@ const UserPage = () => {
     // TODO: Navigate to booking page or open modal
   };
 
-  // Load user info khi component mount
+  // Load user info và lịch hẹn khi component mount
   useEffect(() => {
     const loadUserInfo = async () => {
       try {
@@ -223,9 +186,47 @@ const UserPage = () => {
             imgURL: data.imgURL || ''
           });
         }
+
+        // Load lịch hẹn từ MongoDB
+        const appointmentsResponse = await userService.getAppointments(currentUserId);
+        if (appointmentsResponse.data && Array.isArray(appointmentsResponse.data)) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          const upcoming = [];
+          const history = [];
+
+          appointmentsResponse.data.forEach(lh => {
+            const ngayHen = new Date(lh.ngayHen);
+            const appointmentData = {
+              id: lh._id,
+              ngayHen: ngayHen.toISOString().split('T')[0],
+              gioHen: ngayHen.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+              bacSi: lh.LichLamViec?.BacSi?.tenBS || 'N/A',
+              khoa: lh.LichLamViec?.BacSi?.Khoa?.tenKhoa || 'N/A',
+              dichVu: lh.DichVu?.map(dv => dv.tenDV).join(', ') || lh.moTa || 'Khám bệnh',
+              trangThai: lh.trangThai || 'Chưa xác nhận'
+            };
+
+            if (lh.trangThai === 'Đã khám') {
+              history.push(appointmentData);
+            } else if (ngayHen >= today) {
+              upcoming.push(appointmentData);
+            } else {
+              history.push(appointmentData);
+            }
+          });
+
+          // Sắp xếp: upcoming theo ngày tăng dần, history theo ngày giảm dần
+          upcoming.sort((a, b) => new Date(a.ngayHen) - new Date(b.ngayHen));
+          history.sort((a, b) => new Date(b.ngayHen) - new Date(a.ngayHen));
+
+          setUpcomingAppointments(upcoming);
+          setAppointmentHistory(history);
+        }
       } catch (error) {
         console.error('Error loading user info:', error);
-        toast.error(error.message || 'Không thể tải thông tin người dùng!');
+        toast.error(error.response?.data?.message || error.message || 'Không thể tải thông tin người dùng!');
       } finally {
         setLoading(false);
       }
