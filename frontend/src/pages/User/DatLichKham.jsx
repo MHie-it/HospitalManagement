@@ -22,6 +22,7 @@ import { useNavigate } from 'react-router';
 import { khoaService } from '@/services/khoaService';
 import { doctorService } from '@/services/doctorService';
 import { userService } from '@/services/userService';
+import { lichLamViecService } from '@/services/lichLamViecService';
 
 const DatLichKham = () => {
   const navigate = useNavigate();
@@ -32,6 +33,14 @@ const DatLichKham = () => {
   
   // Danh sách bác sĩ từ MongoDB - sẽ được load khi chọn khoa
   const [bacSiList, setBacSiList] = useState([]);
+
+  // Danh sách giờ khả dụng dựa trên ca làm việc của bác sĩ
+  const [availableTimes, setAvailableTimes] = useState([]);
+  const [loadingSchedule, setLoadingSchedule] = useState(false);
+  
+  // Danh sách các ngày bác sĩ có lịch làm việc (format: YYYY-MM-DD)
+  const [availableDates, setAvailableDates] = useState([]);
+  const [loadingDates, setLoadingDates] = useState(false);
 
   const [formData, setFormData] = useState({
     khoa: '',
@@ -101,10 +110,18 @@ const DatLichKham = () => {
     loadBacSiList();
   }, [formData.khoa]);
 
-  // Tạo danh sách giờ hành chính (8:00 - 17:30, mỗi 30 phút)
+  // Tạo danh sách giờ hành chính (8:00 - 17:30) và ca tối (18:00 - 21:30, mỗi 30 phút)
   const generateGioHanhChinh = () => {
     const gioList = [];
+    // Giờ hành chính: 8:00 - 17:30
     for (let hour = 8; hour <= 17; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        gioList.push(timeString);
+      }
+    }
+    // Ca tối: 18:00 - 21:30
+    for (let hour = 18; hour <= 21; hour++) {
       for (let minute = 0; minute < 60; minute += 30) {
         const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
         gioList.push(timeString);
@@ -115,46 +132,242 @@ const DatLichKham = () => {
 
   const gioHanhChinhList = generateGioHanhChinh();
 
+  // Hàm chuyển đổi giờ (HH:MM) thành phút để so sánh
+  const timeToMinutes = (timeString) => {
+    const [hours, minutes] = timeString.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
+
+  // Hàm lấy giờ mặc định dựa trên ca làm việc
+  const getDefaultShiftTimes = (caLam) => {
+    const shiftDefaults = {
+      'Sang': { start: '08:00', end: '12:00' },
+      'Chieu': { start: '13:00', end: '17:00' },
+      'Toi': { start: '18:00', end: '22:00' }
+    };
+    const normalizedCa = String(caLam).toLowerCase();
+    if (normalizedCa === 'sang') return shiftDefaults.Sang;
+    if (normalizedCa === 'chieu') return shiftDefaults.Chieu;
+    if (normalizedCa === 'toi') return shiftDefaults.Toi;
+    return null;
+  };
+
+  // Hàm kiểm tra giờ có nằm trong khoảng ca làm việc không
+  const isTimeInShift = (timeString, shifts) => {
+    if (!shifts || shifts.length === 0) return false;
+    
+    const timeMinutes = timeToMinutes(timeString);
+    
+    return shifts.some(shift => {
+      // Lấy giờ bắt đầu và kết thúc, nếu null thì dùng default dựa trên ca làm việc
+      let gioBatDau = shift.gioBatDau;
+      let gioKetThuc = shift.gioKetThuc;
+      
+      // Nếu không có giờ, dùng default dựa trên ca làm việc
+      if (!gioBatDau || !gioKetThuc) {
+        const defaultTimes = getDefaultShiftTimes(shift.caLam);
+        if (defaultTimes) {
+          gioBatDau = gioBatDau || defaultTimes.start;
+          gioKetThuc = gioKetThuc || defaultTimes.end;
+        } else {
+          return false; // Không có thông tin ca làm việc
+        }
+      }
+      
+      const startMinutes = timeToMinutes(gioBatDau);
+      const endMinutes = timeToMinutes(gioKetThuc);
+      // Kiểm tra giờ có nằm trong khoảng [start, end) (không bao gồm end)
+      return timeMinutes >= startMinutes && timeMinutes < endMinutes;
+    });
+  };
+
+  // Load tất cả lịch làm việc của bác sĩ khi chọn bác sĩ (để lấy danh sách ngày rảnh)
+  useEffect(() => {
+    const loadDoctorAvailableDates = async () => {
+      if (!formData.bacSi) {
+        setAvailableDates([]);
+        setFormData(prev => ({ ...prev, ngayHen: '', gioHen: '' }));
+        return;
+      }
+
+      try {
+        setLoadingDates(true);
+        // Lấy tất cả lịch làm việc của bác sĩ
+        const response = await lichLamViecService.getLichLamViecByDoctorId(formData.bacSi);
+        
+        if (response.data && Array.isArray(response.data)) {
+          // Lọc các ngày có lịch làm việc (có ít nhất 1 ca làm việc)
+          // Và loại bỏ các ngày chỉ có 1 ca tối
+          const datesWithSchedule = response.data
+            .filter(schedule => {
+              // Phải có ít nhất 1 ca làm việc
+              if (!schedule.CaLamViec || schedule.CaLamViec.length === 0) {
+                return false;
+              }
+              
+              // Nếu chỉ có 1 ca và ca đó là "Toi", thì bỏ qua
+              if (schedule.CaLamViec.length === 1) {
+                const ca = schedule.CaLamViec[0];
+                // Kiểm tra nếu ca là "Toi" (đã được populate nên là object)
+                const caLam = ca?.caLam || ca;
+                // So sánh không phân biệt hoa thường
+                if (String(caLam).toLowerCase() === 'toi') {
+                  return false; // Bỏ qua ngày chỉ có 1 ca tối
+                }
+              }
+              
+              return true;
+            })
+            .map(schedule => {
+              const date = new Date(schedule.ngayLam);
+              return date.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+            })
+            .filter((date, index, self) => self.indexOf(date) === index) // Remove duplicates
+            .sort(); // Sort dates
+
+          // Chỉ lấy các ngày từ hôm nay trở đi
+          const today = new Date().toISOString().split('T')[0];
+          const futureDates = datesWithSchedule.filter(date => date >= today);
+          
+          setAvailableDates(futureDates);
+
+          // Nếu ngày hiện tại đã chọn không còn trong danh sách, reset
+          if (formData.ngayHen && !futureDates.includes(formData.ngayHen)) {
+            setFormData(prev => ({ ...prev, ngayHen: '', gioHen: '' }));
+            toast.warning('Ngày đã chọn không còn khả dụng. Vui lòng chọn ngày khác!');
+          }
+        } else {
+          setAvailableDates([]);
+        }
+      } catch (error) {
+        console.error('Error loading doctor available dates:', error);
+        setAvailableDates([]);
+        toast.error(error.response?.data?.message || error.message || 'Không thể tải lịch làm việc của bác sĩ!');
+      } finally {
+        setLoadingDates(false);
+      }
+    };
+
+    loadDoctorAvailableDates();
+  }, [formData.bacSi]);
+
+  // Load lịch làm việc của bác sĩ khi chọn bác sĩ và ngày (để lấy giờ khả dụng)
+  useEffect(() => {
+    const loadDoctorSchedule = async () => {
+      // Reset giờ khi chưa chọn đủ bác sĩ hoặc ngày
+      if (!formData.bacSi || !formData.ngayHen) {
+        setAvailableTimes([]);
+        setFormData(prev => ({ ...prev, gioHen: '' }));
+        return;
+      }
+
+      // Kiểm tra ngày có trong danh sách ngày rảnh không
+      if (availableDates.length > 0 && !availableDates.includes(formData.ngayHen)) {
+        setAvailableTimes([]);
+        setFormData(prev => ({ ...prev, gioHen: '' }));
+        toast.warning('Bác sĩ không có lịch làm việc trong ngày này. Vui lòng chọn ngày khác!');
+        return;
+      }
+
+      try {
+        setLoadingSchedule(true);
+        const response = await lichLamViecService.getLichLamViecByDoctorIdAndDate(
+          formData.bacSi,
+          formData.ngayHen
+        );
+
+        console.log('API Response for schedule:', response); // Debug log
+
+        if (response.availableShifts && response.availableShifts.length > 0) {
+          console.log('Available shifts:', response.availableShifts); // Debug log
+          
+          // Xử lý các ca làm việc: nếu không có gioBatDau/gioKetThuc, dùng default
+          const processedShifts = response.availableShifts.map(shift => {
+            if (!shift.gioBatDau || !shift.gioKetThuc) {
+              const defaultTimes = getDefaultShiftTimes(shift.caLam);
+              return {
+                ...shift,
+                gioBatDau: shift.gioBatDau || defaultTimes?.start || '08:00',
+                gioKetThuc: shift.gioKetThuc || defaultTimes?.end || '17:00'
+              };
+            }
+            return shift;
+          });
+          
+          console.log('Processed shifts:', processedShifts); // Debug log
+          
+          // Lọc danh sách giờ hành chính dựa trên ca làm việc
+          const filteredTimes = gioHanhChinhList.filter(time => 
+            isTimeInShift(time, processedShifts)
+          );
+          
+          console.log('Filtered available times:', filteredTimes); // Debug log
+          
+          setAvailableTimes(filteredTimes);
+
+          // Nếu giờ hiện tại không còn trong danh sách khả dụng, reset giờ
+          if (formData.gioHen && !filteredTimes.includes(formData.gioHen)) {
+            setFormData(prev => ({ ...prev, gioHen: '' }));
+            toast.warning('Giờ đã chọn không còn khả dụng. Vui lòng chọn lại!');
+          }
+        } else {
+          // Bác sĩ không có lịch làm việc trong ngày này
+          console.log('No available shifts found'); // Debug log
+          setAvailableTimes([]);
+          setFormData(prev => ({ ...prev, gioHen: '' }));
+          toast.warning('Bác sĩ không có lịch làm việc trong ngày này. Vui lòng chọn ngày khác!');
+        }
+      } catch (error) {
+        console.error('Error loading doctor schedule:', error);
+        console.error('Error details:', error.response?.data); // Debug log
+        // Nếu có lỗi, vẫn hiển thị tất cả giờ hành chính (fallback)
+        setAvailableTimes(gioHanhChinhList);
+        toast.error(error.response?.data?.message || error.message || 'Không thể tải lịch làm việc của bác sĩ!');
+      } finally {
+        setLoadingSchedule(false);
+      }
+    };
+
+    loadDoctorSchedule();
+  }, [formData.bacSi, formData.ngayHen, availableDates]);
+
   // Xử lý thay đổi khoa
   const handleKhoaChange = (khoaId) => {
     setFormData({
       ...formData,
       khoa: khoaId,
-      bacSi: '' // Reset bác sĩ khi đổi khoa
+      bacSi: '', // Reset bác sĩ khi đổi khoa
+      ngayHen: '',
+      gioHen: ''
     });
+    setAvailableTimes([]);
+    setAvailableDates([]);
   };
 
-  // Xử lý thay đổi ngày - reset giờ nếu chọn ngày hôm nay và giờ đã qua
+  // Xử lý thay đổi ngày - validate và reset giờ để load lại lịch làm việc
   const handleNgayHenChange = (ngayHen) => {
-    const today = new Date().toISOString().split('T')[0];
-    const selectedDate = new Date(ngayHen);
-    const now = new Date();
-    
-    // Nếu chọn ngày hôm nay, kiểm tra giờ
-    if (ngayHen === today) {
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-      const currentTime = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
-      
-      // Nếu giờ hiện tại đã qua giờ hành chính, reset giờ
-      if (formData.gioHen && formData.gioHen < currentTime) {
-        setFormData({
-          ...formData,
-          ngayHen: ngayHen,
-          gioHen: ''
-        });
-      } else {
-        setFormData({
-          ...formData,
-          ngayHen: ngayHen
-        });
-      }
-    } else {
-      setFormData({
-        ...formData,
-        ngayHen: ngayHen
-      });
+    // Kiểm tra ngày có trong danh sách ngày rảnh không
+    if (availableDates.length > 0 && !availableDates.includes(ngayHen)) {
+      toast.warning('Bác sĩ không có lịch làm việc trong ngày này. Vui lòng chọn ngày khác!');
+      return;
     }
+
+    // Kiểm tra ngày không được trước ngày hiện tại
+    const selectedDate = new Date(ngayHen);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    selectedDate.setHours(0, 0, 0, 0);
+
+    if (selectedDate < today) {
+      toast.error('Ngày hẹn không được trước ngày hiện tại!');
+      return;
+    }
+
+    setFormData({
+      ...formData,
+      ngayHen: ngayHen,
+      gioHen: '' // Reset giờ để load lại danh sách giờ khả dụng
+    });
   };
 
   // Xử lý submit
@@ -360,7 +573,67 @@ const DatLichKham = () => {
                   min={new Date().toISOString().split('T')[0]}
                   className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
                   required
+                  disabled={!formData.bacSi || loadingDates}
                 />
+                {formData.bacSi && (
+                  <div className="mt-3">
+                    {loadingDates ? (
+                      <p className="text-sm text-gray-500 flex items-center gap-2">
+                        <Clock className="w-4 h-4 animate-spin" />
+                        Đang tải lịch làm việc của bác sĩ...
+                      </p>
+                    ) : availableDates.length > 0 ? (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-gray-700">
+                          Các ngày bác sĩ có lịch làm việc:
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {availableDates.slice(0, 14).map((date) => {
+                            const dateObj = new Date(date);
+                            const isSelected = formData.ngayHen === date;
+                            const isToday = date === new Date().toISOString().split('T')[0];
+                            
+                            return (
+                              <button
+                                key={date}
+                                type="button"
+                                onClick={() => handleNgayHenChange(date)}
+                                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                                  isSelected
+                                    ? 'bg-blue-600 text-white shadow-md'
+                                    : isToday
+                                    ? 'bg-blue-100 text-blue-700 border-2 border-blue-300 hover:bg-blue-200'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
+                                }`}
+                              >
+                                {dateObj.toLocaleDateString('vi-VN', {
+                                  weekday: 'short',
+                                  day: '2-digit',
+                                  month: '2-digit'
+                                })}
+                                {isToday && !isSelected && (
+                                  <span className="ml-1 text-xs">(Hôm nay)</span>
+                                )}
+                              </button>
+                            );
+                          })}
+                          {availableDates.length > 14 && (
+                            <span className="px-3 py-1.5 text-sm text-gray-500">
+                              +{availableDates.length - 14} ngày khác
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Hoặc chọn ngày khác trong ô trên (chỉ các ngày có lịch làm việc mới được chấp nhận)
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-yellow-600 bg-yellow-50 border border-yellow-200 rounded-lg p-2">
+                            Bác sĩ chưa có lịch làm việc trong thời gian tới. Vui lòng chọn bác sĩ khác hoặc liên hệ bác sĩ để đặt lịch.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Giờ hẹn */}
@@ -375,22 +648,35 @@ const DatLichKham = () => {
                   onChange={(e) => setFormData({ ...formData, gioHen: e.target.value })}
                   className="flex h-11 w-full rounded-md border border-blue-200 bg-white px-3 py-2 text-sm shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
+                  disabled={loadingSchedule || !formData.bacSi || !formData.ngayHen || availableTimes.length === 0}
                 >
-                  <option value="">-- Chọn giờ --</option>
+                  <option value="">
+                    {loadingSchedule 
+                      ? 'Đang tải lịch làm việc...' 
+                      : !formData.bacSi || !formData.ngayHen
+                      ? 'Vui lòng chọn bác sĩ và ngày trước'
+                      : availableTimes.length === 0
+                      ? 'Bác sĩ không có lịch làm việc trong ngày này'
+                      : '-- Chọn giờ --'}
+                  </option>
                   {(() => {
-                    // Nếu chọn ngày hôm nay, chỉ hiển thị giờ còn lại trong ngày
-                    const today = new Date().toISOString().split('T')[0];
-                    if (formData.ngayHen === today) {
+                    // Nếu có danh sách giờ khả dụng từ ca làm việc, sử dụng danh sách đó
+                    if (availableTimes.length > 0) {
+                      const today = new Date().toISOString().split('T')[0];
                       const now = new Date();
                       const currentHour = now.getHours();
                       const currentMinute = now.getMinutes();
                       const currentTimeInMinutes = currentHour * 60 + currentMinute;
-                      
-                      return gioHanhChinhList
+
+                      return availableTimes
                         .filter(gio => {
-                          const [hour, minute] = gio.split(':').map(Number);
-                          const timeInMinutes = hour * 60 + minute;
-                          return timeInMinutes > currentTimeInMinutes;
+                          // Nếu chọn ngày hôm nay, chỉ hiển thị giờ còn lại trong ngày
+                          if (formData.ngayHen === today) {
+                            const [hour, minute] = gio.split(':').map(Number);
+                            const timeInMinutes = hour * 60 + minute;
+                            return timeInMinutes > currentTimeInMinutes;
+                          }
+                          return true;
                         })
                         .map(gio => (
                           <option key={gio} value={gio}>
@@ -398,14 +684,15 @@ const DatLichKham = () => {
                           </option>
                         ));
                     }
-                    // Nếu chọn ngày khác, hiển thị tất cả giờ hành chính
-                    return gioHanhChinhList.map(gio => (
-                      <option key={gio} value={gio}>
-                        {gio}
-                      </option>
-                    ));
+                    // Fallback: hiển thị tất cả giờ hành chính nếu chưa có lịch làm việc
+                    return null;
                   })()}
                 </select>
+                {formData.bacSi && formData.ngayHen && availableTimes.length > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Các giờ khả dụng dựa trên lịch làm việc của bác sĩ
+                  </p>
+                )}
               </div>
 
               {/* Mô tả */}

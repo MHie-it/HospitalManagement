@@ -361,3 +361,63 @@ export const updateAccountStatus = async (request, response) => {
         });
     }
 };
+
+// Đổi mật khẩu cho bác sĩ
+export const changePassword = async (request, response) => {
+    try {
+        const { userId } = request.params;
+        const { currentPassword, newPassword } = request.body;
+
+        if (!userId || !userId.match(/^[0-9a-fA-F]{24}$/)) {
+            return response.status(400).json({
+                message: "ID không hợp lệ!"
+            });
+        }
+
+        if (!currentPassword || !newPassword) {
+            return response.status(400).json({
+                message: "Vui lòng nhập đầy đủ mật khẩu hiện tại và mật khẩu mới!"
+            });
+        }
+
+        if (newPassword.length < 6) {
+            return response.status(400).json({
+                message: "Mật khẩu mới phải có ít nhất 6 ký tự!"
+            });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return response.status(404).json({
+                message: "Không tìm thấy tài khoản!"
+            });
+        }
+
+        // Kiểm tra mật khẩu hiện tại
+        const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+        if (!isPasswordValid) {
+            return response.status(400).json({
+                message: "Mật khẩu hiện tại không đúng!"
+            });
+        }
+
+        // Hash mật khẩu mới
+        const saltRounds = 10;
+        const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+
+        // Cập nhật mật khẩu
+        user.password = hashedNewPassword;
+        await user.save();
+
+        response.status(200).json({
+            message: "Đổi mật khẩu thành công!",
+            success: true
+        });
+    } catch (error) {
+        console.error(error);
+        response.status(500).json({
+            message: "Lỗi khi đổi mật khẩu!",
+            error: error.message
+        });
+    }
+};

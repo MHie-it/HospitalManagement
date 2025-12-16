@@ -33,4 +33,22 @@ export const doctorService = {
         }
     },
 
+    updateDoctor: async (id, doctorData) => {
+        try {
+            const response = await api.put(`/doctor/${id}`, doctorData);
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    changePassword: async (userId, passwordData) => {
+        try {
+            const response = await api.put(`/auth/change-password/${userId}`, passwordData);
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+
 };

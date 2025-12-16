@@ -30,6 +30,10 @@ const lichHenSchema = new mongoose.Schema(
 
         },
 
+        ghiChuBacSi: {
+            type: String,
+        },
+
         trangThai : {
             type : String ,
             enum : ['Đã xác nhận', 'Chưa xác nhận', 'Đã hủy', 'Đã khám'],
