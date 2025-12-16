@@ -1,9 +1,18 @@
 import React from 'react'
 import { Button } from './button'
 import { LogOut } from 'lucide-react'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
+import { authService } from '@/services/authService'
+import { toast } from 'sonner'
 
 const Dashboard = () => {
+    const navigate = useNavigate()
+
+    const handleLogout = () => {
+        authService.logout()
+        toast.success('Đăng xuất thành công!')
+        navigate('/')
+    }
     return (
         <div className="h-full  bg-white w-full mt-0 p-0 shadow-xl  ">
             <img src="./public/IMG/LOGO.png" alt="logo" className="p-4 m-0  mx-auto" />
@@ -43,7 +52,7 @@ const Dashboard = () => {
                 <div className="w-full h-12 text-xl text-black hover:bg-blue-300 flex items-center justify-center">
                     Quản lý loại dịch vụ
                 </div>
-            </Link>  
+            </Link>
 
             <Link
                 to="/ServiceManagement"
@@ -71,9 +80,12 @@ const Dashboard = () => {
                 <div className="w-full h-12 text-xl text-black hover:bg-blue-300 flex items-center justify-center">
                     Quản lý lịch hẹn
                 </div>
-            </Link>      
-            
-            <Button className=" h-12 !bg-red-500 text-white text-center mb-10 hover:bg-red-700 rounded-lg mt-20 mx-auto">
+            </Link>
+
+            <Button
+                className=" h-12 !bg-red-500 text-white text-center mb-10 hover:bg-red-700 rounded-lg mt-20 mx-auto"
+                onClick={handleLogout}
+            >
                 <LogOut />
                 Đăng xuất
             </Button>

@@ -243,12 +243,14 @@ export const Login = async (request, response) => {
         let userType = null;
 
         if (userRole.includes('Doctor')) {
+             userType = 'Doctor';
             if (user.BacSi) {
                 profileInfo = await BacSi.findById(user.BacSi)
                     .populate('Khoa');
                 userType = 'Doctor';
             }
         } else if (userRole.includes('User')) {
+            userType = 'User';
             if (user.NguoiDung) {
                 profileInfo = await NguoiDung.findById(user.NguoiDung);
                 userType = 'User';

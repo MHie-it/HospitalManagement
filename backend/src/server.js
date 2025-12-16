@@ -9,6 +9,7 @@ import lichHenRouter from './Router/lichHenRouter.js';
 import lichLamViecRouter from './Router/lichLamViecRouter.js';
 import dichVuRouter from './Router/dichVuRouter.js';
 import loaiDVRouter from './Router/loaiDVRouter.js';
+import thietbiRouter from './Router/thietbiRouter.js';
 import cors from 'cors';
 
 dotenv.config();
@@ -35,6 +36,7 @@ app.use("/api/lichHen",lichHenRouter);
 app.use("/api/lichLamViec",lichLamViecRouter);
 app.use("/api/dichvu",dichVuRouter);
 app.use("/api/loaidv",loaiDVRouter);
+app.use("/api/thietbi",thietbiRouter);
 
 // Kết nối database trước khi start server
 connectDB()
