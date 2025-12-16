@@ -18,6 +18,14 @@ const DoctorSchedule = () => {
   const [weekSchedule, setWeekSchedule] = useState({})
   const [weekOffset, setWeekOffset] = useState(0) // 0 = tuần này, 1 = tuần sau, -1 = tuần trước
 
+  // Hàm format ngày thành YYYY-MM-DD không bị ảnh hưởng bởi timezone
+  const formatDateToYYYYMMDD = (date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
   // Lấy các ngày trong tuần dựa trên weekOffset
   const getWeekDays = (offset = 0) => {
     const today = new Date()
@@ -114,7 +122,8 @@ const DoctorSchedule = () => {
           const scheduleMap = {}
           scheduleResponse.data.forEach(schedule => {
             const date = new Date(schedule.ngayLam)
-            const dateKey = date.toISOString().split('T')[0]
+            // Sử dụng formatDateToYYYYMMDD để tránh vấn đề timezone
+            const dateKey = formatDateToYYYYMMDD(date)
             scheduleMap[dateKey] = schedule.CaLamViec.map(ca => ca._id || ca)
           })
           setAllSchedules(scheduleMap)
@@ -142,7 +151,8 @@ const DoctorSchedule = () => {
     const weekScheduleMap = {}
     
     weekDaysForSchedule.forEach(day => {
-      const dateKey = day.toISOString().split('T')[0]
+      // Sử dụng formatDateToYYYYMMDD để tránh vấn đề timezone
+      const dateKey = formatDateToYYYYMMDD(day)
       weekScheduleMap[dateKey] = schedules[dateKey] || []
     })
     
@@ -205,12 +215,16 @@ const DoctorSchedule = () => {
 
       // Chuyển đổi weekSchedule thành format API
       const weekScheduleData = weekDays.map(day => {
-        const dateKey = day.toISOString().split('T')[0]
+        // Sử dụng formatDateToYYYYMMDD để tránh vấn đề timezone (đặc biệt là Chủ nhật)
+        const dateKey = formatDateToYYYYMMDD(day)
+        console.log(`Saving schedule for date: ${dateKey}, day: ${day.toLocaleDateString('vi-VN', { weekday: 'long' })}`)
         return {
           ngayLam: dateKey,
           caLamViecIds: weekSchedule[dateKey] || []
         }
       })
+      
+      console.log('Week schedule data to save:', weekScheduleData)
 
       const response = await lichLamViecService.createOrUpdateLichLamViec(doctorId, weekScheduleData)
       
@@ -220,7 +234,8 @@ const DoctorSchedule = () => {
         const updatedSchedules = { ...allSchedules }
         response.data.forEach(schedule => {
           const date = new Date(schedule.ngayLam)
-          const dateKey = date.toISOString().split('T')[0]
+          // Sử dụng formatDateToYYYYMMDD để tránh vấn đề timezone
+          const dateKey = formatDateToYYYYMMDD(date)
           updatedSchedules[dateKey] = schedule.CaLamViec.map(ca => ca._id || ca)
         })
         setAllSchedules(updatedSchedules)
@@ -439,8 +454,10 @@ const DoctorSchedule = () => {
                       </thead>
                       <tbody>
                         {weekDays.map((day, dayIndex) => {
-                          const dateKey = day.toISOString().split('T')[0]
-                          const isToday = dateKey === new Date().toISOString().split('T')[0]
+                          // Sử dụng formatDateToYYYYMMDD để tránh vấn đề timezone
+                          const dateKey = formatDateToYYYYMMDD(day)
+                          const todayKey = formatDateToYYYYMMDD(new Date())
+                          const isToday = dateKey === todayKey
                           
                           return (
                             <tr key={dateKey} className={`border-b border-gray-100 hover:bg-gray-50 ${isToday ? 'bg-blue-50' : ''}`}>

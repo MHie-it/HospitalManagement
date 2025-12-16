@@ -55,4 +55,16 @@ export const authService = {
       throw error;
     }
   },
+
+  forgotPassword: async (username, newPassword) => {
+    try {
+      const response = await api.post('/auth/forgot-password', {
+        username,
+        newPassword
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
 };

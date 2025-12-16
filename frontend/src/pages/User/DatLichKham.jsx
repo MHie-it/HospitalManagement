@@ -134,7 +134,21 @@ const DatLichKham = () => {
 
   // Hàm chuyển đổi giờ (HH:MM) thành phút để so sánh
   const timeToMinutes = (timeString) => {
-    const [hours, minutes] = timeString.split(':').map(Number);
+    if (!timeString || typeof timeString !== 'string') {
+      console.warn(`[timeToMinutes] Invalid timeString: ${timeString}`);
+      return -1;
+    }
+    const parts = timeString.split(':');
+    if (parts.length !== 2) {
+      console.warn(`[timeToMinutes] Invalid time format: ${timeString}`);
+      return -1;
+    }
+    const hours = Number(parts[0]);
+    const minutes = Number(parts[1]);
+    if (isNaN(hours) || isNaN(minutes)) {
+      console.warn(`[timeToMinutes] Invalid numbers in time: ${timeString}`);
+      return -1;
+    }
     return hours * 60 + minutes;
   };
 
@@ -157,6 +171,7 @@ const DatLichKham = () => {
     if (!shifts || shifts.length === 0) return false;
     
     const timeMinutes = timeToMinutes(timeString);
+    if (timeMinutes < 0) return false; // Invalid time
     
     return shifts.some(shift => {
       // Lấy giờ bắt đầu và kết thúc, nếu null thì dùng default dựa trên ca làm việc
@@ -170,14 +185,27 @@ const DatLichKham = () => {
           gioBatDau = gioBatDau || defaultTimes.start;
           gioKetThuc = gioKetThuc || defaultTimes.end;
         } else {
+          console.warn(`[isTimeInShift] No default times for caLam: ${shift.caLam}`);
           return false; // Không có thông tin ca làm việc
         }
       }
       
       const startMinutes = timeToMinutes(gioBatDau);
       const endMinutes = timeToMinutes(gioKetThuc);
+      
+      if (startMinutes < 0 || endMinutes < 0) {
+        console.warn(`[isTimeInShift] Invalid time range: ${gioBatDau} - ${gioKetThuc}`);
+        return false;
+      }
+      
       // Kiểm tra giờ có nằm trong khoảng [start, end) (không bao gồm end)
-      return timeMinutes >= startMinutes && timeMinutes < endMinutes;
+      const isInRange = timeMinutes >= startMinutes && timeMinutes < endMinutes;
+      
+      if (isInRange) {
+        console.log(`[isTimeInShift] Time ${timeString} is in shift ${shift.caLam} (${gioBatDau} - ${gioKetThuc})`);
+      }
+      
+      return isInRange;
     });
   };
 
@@ -196,6 +224,8 @@ const DatLichKham = () => {
         const response = await lichLamViecService.getLichLamViecByDoctorId(formData.bacSi);
         
         if (response.data && Array.isArray(response.data)) {
+          console.log('[DatLichKham] Raw schedule data:', response.data); // Debug log
+          
           // Lọc các ngày có lịch làm việc (có ít nhất 1 ca làm việc)
           // Và loại bỏ các ngày chỉ có 1 ca tối
           const datesWithSchedule = response.data
@@ -219,15 +249,38 @@ const DatLichKham = () => {
               return true;
             })
             .map(schedule => {
-              const date = new Date(schedule.ngayLam);
-              return date.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+              // Parse ngày tránh timezone issue
+              let dateStr = '';
+              if (schedule.ngayLam) {
+                // Nếu là Date object hoặc ISO string, parse đúng cách
+                const dateObj = new Date(schedule.ngayLam);
+                // Lấy năm, tháng, ngày từ local time để tránh timezone shift
+                const year = dateObj.getFullYear();
+                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const day = String(dateObj.getDate()).padStart(2, '0');
+                dateStr = `${year}-${month}-${day}`;
+                
+                console.log(`[DatLichKham] Parsing date: ${schedule.ngayLam} -> ${dateStr} (day of week: ${dateObj.getDay()})`); // Debug log
+              }
+              return dateStr;
             })
+            .filter(date => date !== '') // Remove empty dates
             .filter((date, index, self) => self.indexOf(date) === index) // Remove duplicates
             .sort(); // Sort dates
 
+          console.log('[DatLichKham] Dates with schedule (before filtering):', datesWithSchedule); // Debug log
+
           // Chỉ lấy các ngày từ hôm nay trở đi
-          const today = new Date().toISOString().split('T')[0];
-          const futureDates = datesWithSchedule.filter(date => date >= today);
+          const today = new Date();
+          const todayYear = today.getFullYear();
+          const todayMonth = String(today.getMonth() + 1).padStart(2, '0');
+          const todayDay = String(today.getDate()).padStart(2, '0');
+          const todayStr = `${todayYear}-${todayMonth}-${todayDay}`;
+          
+          const futureDates = datesWithSchedule.filter(date => date >= todayStr);
+          
+          console.log('[DatLichKham] Today:', todayStr); // Debug log
+          console.log('[DatLichKham] Future dates:', futureDates); // Debug log
           
           setAvailableDates(futureDates);
 
@@ -276,32 +329,78 @@ const DatLichKham = () => {
           formData.ngayHen
         );
 
-        console.log('API Response for schedule:', response); // Debug log
+        console.log('[DatLichKham] Full API Response:', JSON.stringify(response, null, 2)); // Debug log
 
-        if (response.availableShifts && response.availableShifts.length > 0) {
-          console.log('Available shifts:', response.availableShifts); // Debug log
+        if (response.availableShifts && Array.isArray(response.availableShifts) && response.availableShifts.length > 0) {
+          console.log('[DatLichKham] Available shifts from API:', response.availableShifts); // Debug log
           
-          // Xử lý các ca làm việc: nếu không có gioBatDau/gioKetThuc, dùng default
-          const processedShifts = response.availableShifts.map(shift => {
+          // Xử lý các ca làm việc: đảm bảo có gioBatDau/gioKetThuc và caLam
+          const processedShifts = response.availableShifts.map((shift, index) => {
+            // Lấy caLam từ shift - có thể là string hoặc từ object
+            let caLam = shift.caLam;
+            
+            // Nếu caLam là object, lấy giá trị từ object
+            if (caLam && typeof caLam === 'object') {
+              caLam = caLam.caLam || caLam._id || String(caLam);
+            }
+            
+            // Nếu vẫn không có, thử lấy từ _id
+            if (!caLam && shift._id) {
+              if (typeof shift._id === 'object') {
+                caLam = shift._id.caLam || String(shift._id);
+              }
+            }
+            
+            // Fallback: nếu vẫn không có, log warning
+            if (!caLam) {
+              console.warn(`[DatLichKham] Shift ${index} has no caLam:`, shift);
+              caLam = 'Unknown';
+            }
+            
+            // Đảm bảo caLam là string
+            caLam = String(caLam);
+            
+            // Nếu không có giờ, dùng default dựa trên ca làm việc
             if (!shift.gioBatDau || !shift.gioKetThuc) {
-              const defaultTimes = getDefaultShiftTimes(shift.caLam);
-              return {
+              const defaultTimes = getDefaultShiftTimes(caLam);
+              if (!defaultTimes) {
+                console.warn(`[DatLichKham] No default times for caLam: ${caLam}`);
+              }
+              const processed = {
                 ...shift,
+                caLam: caLam,
                 gioBatDau: shift.gioBatDau || defaultTimes?.start || '08:00',
                 gioKetThuc: shift.gioKetThuc || defaultTimes?.end || '17:00'
               };
+              console.log(`[DatLichKham] Processed shift ${caLam} (no time) with default:`, processed);
+              return processed;
             }
-            return shift;
+            
+            // Đảm bảo caLam được set và giờ hợp lệ
+            const processed = {
+              ...shift,
+              caLam: caLam,
+              gioBatDau: shift.gioBatDau,
+              gioKetThuc: shift.gioKetThuc
+            };
+            console.log(`[DatLichKham] Processed shift ${caLam} with time:`, processed);
+            return processed;
           });
           
-          console.log('Processed shifts:', processedShifts); // Debug log
+          console.log('[DatLichKham] All processed shifts:', processedShifts); // Debug log
           
           // Lọc danh sách giờ hành chính dựa trên ca làm việc
-          const filteredTimes = gioHanhChinhList.filter(time => 
-            isTimeInShift(time, processedShifts)
-          );
+          const filteredTimes = gioHanhChinhList.filter(time => {
+            const isInShift = isTimeInShift(time, processedShifts);
+            return isInShift;
+          });
           
-          console.log('Filtered available times:', filteredTimes); // Debug log
+          console.log('[DatLichKham] Filtered available times:', filteredTimes); // Debug log
+          console.log('[DatLichKham] Total available times:', filteredTimes.length, 'out of', gioHanhChinhList.length);
+          
+          if (filteredTimes.length === 0) {
+            console.warn('[DatLichKham] No times filtered! Check processed shifts:', processedShifts);
+          }
           
           setAvailableTimes(filteredTimes);
 
@@ -363,8 +462,8 @@ const DatLichKham = () => {
       return;
     }
 
-    setFormData({
-      ...formData,
+      setFormData({
+        ...formData,
       ngayHen: ngayHen,
       gioHen: '' // Reset giờ để load lại danh sách giờ khả dụng
     });
@@ -455,11 +554,11 @@ const DatLichKham = () => {
       
       if (response.data) {
         toast.success(response.message || 'Đặt lịch khám thành công!');
-        
-        // Chuyển về trang user sau 1.5 giây
-        setTimeout(() => {
+      
+      // Chuyển về trang user sau 1.5 giây
+      setTimeout(() => {
           navigate('/userpage');
-        }, 1500);
+      }, 1500);
       }
     } catch (error) {
       console.error('Error creating appointment:', error);
@@ -589,9 +688,18 @@ const DatLichKham = () => {
                         </p>
                         <div className="flex flex-wrap gap-2">
                           {availableDates.slice(0, 14).map((date) => {
-                            const dateObj = new Date(date);
+                            // Parse date tránh timezone issue - date là string YYYY-MM-DD
+                            const [year, month, day] = date.split('-').map(Number);
+                            const dateObj = new Date(year, month - 1, day);
+                            
                             const isSelected = formData.ngayHen === date;
-                            const isToday = date === new Date().toISOString().split('T')[0];
+                            
+                            // So sánh với hôm nay (cũng dùng local date)
+                            const today = new Date();
+                            const todayYear = today.getFullYear();
+                            const todayMonth = today.getMonth() + 1;
+                            const todayDay = today.getDate();
+                            const isToday = year === todayYear && month === todayMonth && day === todayDay;
                             
                             return (
                               <button
