@@ -243,19 +243,37 @@ export const Login = async (request, response) => {
         let userType = null;
 
         if (userRole.includes('Doctor')) {
+            userType = 'Doctor';
             if (user.BacSi) {
-                profileInfo = await BacSi.findById(user.BacSi)
-                    .populate('Khoa');
-                userType = 'Doctor';
+                try {
+                    profileInfo = await BacSi.findById(user.BacSi)
+                        .populate('Khoa');
+                } catch (error) {
+                    console.error('Error populating BacSi:', error);
+                    // Vẫn set userType là Doctor ngay cả khi không populate được
+                    profileInfo = null;
+                }
             }
         } else if (userRole.includes('User')) {
+            userType = 'User';
             if (user.NguoiDung) {
-                profileInfo = await NguoiDung.findById(user.NguoiDung);
-                userType = 'User';
+                try {
+                    profileInfo = await NguoiDung.findById(user.NguoiDung);
+                } catch (error) {
+                    console.error('Error populating NguoiDung:', error);
+                    profileInfo = null;
+                }
             }
         } else if (userRole.includes('Admin')) {
             profileInfo = null;
             userType = 'Admin';
+        }
+
+        // Kiểm tra nếu userType vẫn là null (có thể do role không hợp lệ)
+        if (!userType) {
+            return response.status(400).json({
+                message: "Tài khoản không có quyền hợp lệ!"
+            });
         }
 
         const userData = {
