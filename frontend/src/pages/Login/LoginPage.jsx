@@ -167,7 +167,7 @@ const LoginPage = () => {
               disabled={loading}
             />
 
-
+{/* 
             <Button
               variant="gradient"
               size="lg"
@@ -175,7 +175,7 @@ const LoginPage = () => {
             >
               <MailIcon />
               Đăng nhập bằng Gmail
-            </Button>
+            </Button> */}
 
             <Button
               variant="gradient"
