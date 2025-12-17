@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button'
+  import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -55,8 +55,10 @@ const LoginPage = () => {
       }
     } catch (error) {
       // Hiển thị lỗi từ server
-      toast.error(error.message || "Đăng nhập thất bại!");
+      const errorMessage = error.response?.data?.message || error.message || "Đăng nhập thất bại!";
+      toast.error(errorMessage);
       console.error("Lỗi đăng nhập:", error);
+      console.error("Error response:", error.response?.data);
     } finally {
       setLoading(false);
     }

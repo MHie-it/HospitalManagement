@@ -15,17 +15,18 @@ api.interceptors.response.use(
     // Xử lý lỗi chung
     if (error.response) {
       // Server trả về lỗi - giữ nguyên error object để có thể truy cập error.response.data
-      // Chỉ thêm message vào error object nếu chưa có
-      if (!error.message && error.response.data?.message) {
-        error.message = error.response.data.message;
-      }
-      return Promise.reject(error);
+      // Thêm message vào error object từ response.data.message
+      const errorMessage = error.response.data?.message || error.message || 'Có lỗi xảy ra!';
+      const enhancedError = new Error(errorMessage);
+      enhancedError.response = error.response;
+      enhancedError.status = error.response.status;
+      return Promise.reject(enhancedError);
     } else if (error.request) {
       // Request được gửi nhưng không nhận được response
-      return Promise.reject({ message: 'Không thể kết nối đến server!' });
+      return Promise.reject(new Error('Không thể kết nối đến server!'));
     } else {
       // Lỗi khi setup request
-      return Promise.reject({ message: 'Có lỗi xảy ra!' });
+      return Promise.reject(new Error(error.message || 'Có lỗi xảy ra!'));
     }
   }
 );
