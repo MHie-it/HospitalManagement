@@ -1,6 +1,6 @@
 import Backgound from '@/components/ui/Backgound'
 import Dashboard from '@/components/ui/Dashboard'
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -21,130 +21,72 @@ import {
   XCircle
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { lichHenService } from '@/services/lichHenService'
 
 const LichHenManagement = () => {
+  const [appointments, setAppointments] = useState([])
+  const [loading, setLoading] = useState(false)
   const [selectedAppointment, setSelectedAppointment] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
-  const [filterPeriod, setFilterPeriod] = useState('all') // 'all', 'today', 'week', 'month'
+  const [filterPeriod, setFilterPeriod] = useState('all') 
 
-  // Dữ liệu mẫu
-  const [appointments] = useState([
-    {
-      id: 1,
-      NguoiDung: {
-        hoTen: 'Nguyễn Văn A',
-        soDienThoai: '0901234567',
-        email: 'nguyenvana@email.com',
-        diaChi: '123 Đường ABC, Quận 1, TP.HCM'
-      },
-      LichLamViec: {
-        BacSi: {
-          tenBS: 'BS. Trần Văn B',
-          Khoa: { tenKhoa: 'Khoa Nội' }
-        }
-      },
-      ngayHen: new Date('2024-12-20T09:00:00'),
-      DichVu: [{ tenDV: 'Khám tổng quát' }],
-      moTa: 'Bệnh nhân có tiền sử dị ứng thuốc',
-      trangThai: 'Chưa xác nhận'
-    },
-    {
-      id: 2,
-      NguoiDung: {
-        hoTen: 'Trần Thị B',
-        soDienThoai: '0912345678',
-        email: 'tranthib@email.com',
-        diaChi: '456 Đường XYZ, Quận 2, TP.HCM'
-      },
-      LichLamViec: {
-        BacSi: {
-          tenBS: 'BS. Lê Văn C',
-          Khoa: { tenKhoa: 'Khoa Sản' }
-        }
-      },
-      ngayHen: new Date('2024-12-20T10:30:00'),
-      DichVu: [{ tenDV: 'Tái khám sau phẫu thuật' }],
-      moTa: 'Cần kiểm tra vết thương',
-      trangThai: 'Đã xác nhận'
-    },
-    {
-      id: 3,
-      NguoiDung: {
-        hoTen: 'Lê Văn C',
-        soDienThoai: '0923456789',
-        email: 'levanc@email.com',
-        diaChi: '789 Đường DEF, Quận 3, TP.HCM'
-      },
-      LichLamViec: {
-        BacSi: {
-          tenBS: 'BS. Phạm Thị D',
-          Khoa: { tenKhoa: 'Khoa Tim mạch' }
-        }
-      },
-      ngayHen: new Date('2024-12-21T14:00:00'),
-      DichVu: [{ tenDV: 'Khám chuyên khoa tim mạch' }],
-      moTa: '',
-      trangThai: 'Chưa xác nhận'
-    },
-    {
-      id: 4,
-      NguoiDung: {
-        hoTen: 'Phạm Thị D',
-        soDienThoai: '0934567890',
-        email: 'phamthid@email.com',
-        diaChi: '321 Đường GHI, Quận 4, TP.HCM'
-      },
-      LichLamViec: {
-        BacSi: {
-          tenBS: 'BS. Nguyễn Văn A',
-          Khoa: { tenKhoa: 'Khoa Nội' }
-        }
-      },
-      ngayHen: new Date('2024-12-21T08:30:00'),
-      DichVu: [{ tenDV: 'Khám sức khỏe định kỳ' }],
-      moTa: 'Bệnh nhân mới',
-      trangThai: 'Đã xác nhận'
-    },
-    {
-      id: 5,
-      NguoiDung: {
-        hoTen: 'Hoàng Văn E',
-        soDienThoai: '0945678901',
-        email: 'hoangvane@email.com',
-        diaChi: '654 Đường JKL, Quận 5, TP.HCM'
-      },
-      LichLamViec: {
-        BacSi: {
-          tenBS: 'BS. Trần Văn B',
-          Khoa: { tenKhoa: 'Khoa Nội' }
-        }
-      },
-      ngayHen: new Date('2024-12-22T11:00:00'),
-      DichVu: [{ tenDV: 'Khám tổng quát' }],
-      moTa: 'Đã hoàn thành khám',
-      trangThai: 'Đã khám'
-    },
-    {
-      id: 6,
-      NguoiDung: {
-        hoTen: 'Võ Thị F',
-        soDienThoai: '0956789012',
-        email: 'vothif@email.com',
-        diaChi: '987 Đường MNO, Quận 6, TP.HCM'
-      },
-      LichLamViec: {
-        BacSi: {
-          tenBS: 'BS. Lê Văn C',
-          Khoa: { tenKhoa: 'Khoa Sản' }
-        }
-      },
-      ngayHen: new Date('2024-12-19T15:30:00'),
-      DichVu: [{ tenDV: 'Khám chuyên khoa' }],
-      moTa: 'Bệnh nhân hủy lịch',
-      trangThai: 'Đã hủy'
+  useEffect(() => {
+    fetchAppointments()
+  }, [])
+
+  // Hàm lấy danh sách lịch hẹn
+  const fetchAppointments = async () => {
+    setLoading(true)
+    try {
+      const response = await lichHenService.getAllLichHen()
+      const appointmentsData = response.data || []
+      
+      // Map dữ liệu từ backend sang format hiển thị
+      const mappedAppointments = appointmentsData.map(apt => ({
+        _id: apt._id,
+        id: apt._id,
+        NguoiDung: apt.NguoiDung ? {
+          hoTen: apt.NguoiDung.hoTen || '',
+          soDienThoai: apt.NguoiDung.SDT || '',
+          email: apt.NguoiDung.email || '',
+          diaChi: apt.NguoiDung.diaChi || ''
+        } : null,
+        LichLamViec: apt.LichLamViec ? {
+          BacSi: apt.LichLamViec.BacSi ? {
+            tenBS: apt.LichLamViec.BacSi.tenBS || '',
+            Khoa: apt.LichLamViec.BacSi.Khoa ? {
+              tenKhoa: apt.LichLamViec.BacSi.Khoa.tenKhoa || ''
+            } : null
+          } : null
+        } : null,
+        ngayHen: apt.ngayHen ? new Date(apt.ngayHen) : new Date(),
+        DichVu: apt.DichVu || [],
+        moTa: apt.moTa || '',
+        trangThai: apt.trangThai || 'Chưa xác nhận'
+      }))
+
+      setAppointments(mappedAppointments)
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách lịch hẹn:', error)
+      toast.error(error.message || 'Không thể tải danh sách lịch hẹn')
+    } finally {
+      setLoading(false)
     }
-  ])
+  }
+
+  // Hàm cập nhật trạng thái lịch hẹn
+  const handleUpdateStatus = async (appointmentId, newStatus) => {
+    try {
+      await lichHenService.updateLichHen(appointmentId, { trangThai: newStatus })
+      toast.success('Cập nhật trạng thái thành công!')
+      await fetchAppointments()
+      setSelectedAppointment(null)
+    } catch (error) {
+      console.error('Lỗi khi cập nhật trạng thái:', error)
+      toast.error(error.message || 'Có lỗi xảy ra khi cập nhật trạng thái!')
+    }
+  }
 
   // Lọc lịch hẹn
   const filteredAppointments = useMemo(() => {
@@ -273,7 +215,7 @@ const LichHenManagement = () => {
         <div className="w-[250px] flex-shrink-0">
           <Dashboard />
         </div>
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto hide-scrollbar">
           <div className="p-6 space-y-6">
             {/* Header */}
             <div>
@@ -358,8 +300,16 @@ const LichHenManagement = () => {
             <Card className="shadow-md border-0">
               <CardContent className="p-5">
                 <div className="flex flex-col lg:flex-row gap-4">
-                 
-                  
+                  {/* Search */}
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <Input
+                      placeholder="Tìm kiếm theo tên, số điện thoại, bác sĩ, dịch vụ..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 h-11"
+                    />
+                  </div>
 
                   {/* Filter Period */}
                   <div className="flex gap-2">
@@ -415,14 +365,14 @@ const LichHenManagement = () => {
                     >
                       Chưa xác nhận
                     </Button>
-                    <Button
+                    {/* <Button
                       variant={filterStatus === 'Đã xác nhận' ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setFilterStatus('Đã xác nhận')}
                       className="h-11"
                     >
                       Đã xác nhận
-                    </Button>
+                    </Button> */}
                     <Button
                       variant={filterStatus === 'Đã khám' ? 'default' : 'outline'}
                       size="sm"
@@ -431,14 +381,14 @@ const LichHenManagement = () => {
                     >
                       Đã khám
                     </Button>
-                    <Button
+                    {/* <Button
                       variant={filterStatus === 'Đã hủy' ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setFilterStatus('Đã hủy')}
                       className="h-11"
                     >
                       Đã hủy
-                    </Button>
+                    </Button> */}
                   </div>
                 </div>
               </CardContent>
@@ -458,13 +408,20 @@ const LichHenManagement = () => {
                         <th className="p-3 text-left font-semibold text-sm text-gray-700">Giờ hẹn</th>
                         <th className="p-3 text-left font-semibold text-sm text-gray-700">Bác sĩ</th>
                         <th className="p-3 text-left font-semibold text-sm text-gray-700">Khoa</th>
-                        <th className="p-3 text-left font-semibold text-sm text-gray-700">Dịch vụ</th>
+                        {/* <th className="p-3 text-left font-semibold text-sm text-gray-700">Dịch vụ</th> */}
                         <th className="p-3 text-left font-semibold text-sm text-gray-700">Trạng thái</th>
                         <th className="p-3 text-left font-semibold text-sm text-gray-700">Thao tác</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredAppointments.length === 0 ? (
+                      {loading ? (
+                        <tr>
+                          <td colSpan="10" className="p-12 text-center">
+                            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                            {/* <p className="text-gray-500 text-xl font-medium">Đang tải dữ liệu...</p> */}
+                          </td>
+                        </tr>
+                      ) : filteredAppointments.length === 0 ? (
                         <tr>
                           <td colSpan="10" className="p-12 text-center">
                             <Calendar className="w-20 h-20 text-gray-300 mx-auto mb-4" />
@@ -474,7 +431,7 @@ const LichHenManagement = () => {
                         </tr>
                       ) : (
                         filteredAppointments.map((appointment, index) => (
-                          <tr key={appointment.id} className="border-b hover:bg-gray-50 transition-colors">
+                          <tr key={appointment._id || appointment.id} className="border-b hover:bg-gray-50 transition-colors">
                             <td className="p-3 text-sm">{index + 1}</td>
                             <td className="p-3">
                               <div className="font-medium text-gray-900">{appointment.NguoiDung?.hoTen}</div>
@@ -484,9 +441,9 @@ const LichHenManagement = () => {
                             <td className="p-3 text-sm text-gray-600">{formatTime(appointment.ngayHen)}</td>
                             <td className="p-3 text-sm text-gray-600">{appointment.LichLamViec?.BacSi?.tenBS}</td>
                             <td className="p-3 text-sm text-gray-600">{appointment.LichLamViec?.BacSi?.Khoa?.tenKhoa}</td>
-                            <td className="p-3 text-sm text-gray-600">
-                              {appointment.DichVu?.map(dv => dv.tenDV).join(', ')}
-                            </td>
+                            {/* <td className="p-3 text-sm text-gray-600">
+                              {appointment.DichVu?.map(dv => dv.tenDV).join(', ') || 'Không có'}
+                            </td> */}
                             <td className="p-3">
                               <Badge className={`${getStatusColor(appointment.trangThai)} flex items-center gap-1 w-fit`}>
                                 {getStatusIcon(appointment.trangThai)}
@@ -523,12 +480,12 @@ const LichHenManagement = () => {
           onClick={() => setSelectedAppointment(null)}
         >
           <Card 
-            className="w-full max-w-3xl max-h-[90vh] overflow-auto shadow-2xl border-0"
+            className="relative w-full max-w-3xl max-h-[90vh] overflow-auto shadow-2xl border-0 hide-scrollbar"
             onClick={(e) => e.stopPropagation()}
           >
-            <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-indigo-50">
+            <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-indigo-50  pt-0 pb-3 px-4 sticky top-0 z-10">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <CardTitle className="text-2xl  font-bold text-gray-900 flex items-center gap-2">
                   <div className="bg-blue-600 rounded-lg p-2">
                     <Calendar className="w-6 h-6 text-white" />
                   </div>
@@ -556,28 +513,28 @@ const LichHenManagement = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-white rounded-lg p-4">
                     <p className="text-sm text-gray-500 mb-1">Họ và tên</p>
-                    <p className="text-base font-semibold text-gray-900">{selectedAppointment.NguoiDung?.hoTen}</p>
+                    <p className="text-base font-semibold text-gray-900">{selectedAppointment.NguoiDung?.hoTen || 'N/A'}</p>
                   </div>
                   <div className="bg-white rounded-lg p-4">
                     <p className="text-sm text-gray-500 mb-1 flex items-center gap-1">
                       <Phone className="w-4 h-4" />
                       Số điện thoại
                     </p>
-                    <p className="text-base font-semibold text-gray-900">{selectedAppointment.NguoiDung?.soDienThoai}</p>
+                    <p className="text-base font-semibold text-gray-900">{selectedAppointment.NguoiDung?.soDienThoai || 'N/A'}</p>
                   </div>
                   <div className="bg-white rounded-lg p-4">
                     <p className="text-sm text-gray-500 mb-1 flex items-center gap-1">
                       <Mail className="w-4 h-4" />
                       Email
                     </p>
-                    <p className="text-base font-semibold text-gray-900 break-all">{selectedAppointment.NguoiDung?.email}</p>
+                    <p className="text-base font-semibold text-gray-900 break-all">{selectedAppointment.NguoiDung?.email || 'N/A'}</p>
                   </div>
                   <div className="bg-white rounded-lg p-4 md:col-span-2">
                     <p className="text-sm text-gray-500 mb-1 flex items-center gap-1">
                       <MapPin className="w-4 h-4" />
                       Địa chỉ
                     </p>
-                    <p className="text-base font-semibold text-gray-900">{selectedAppointment.NguoiDung?.diaChi}</p>
+                    <p className="text-base font-semibold text-gray-900">{selectedAppointment.NguoiDung?.diaChi || 'N/A'}</p>
                   </div>
                 </div>
               </div>
@@ -601,16 +558,16 @@ const LichHenManagement = () => {
                   </div>
                   <div className="bg-white rounded-lg p-4">
                     <p className="text-sm text-gray-500 mb-1">Bác sĩ</p>
-                    <p className="text-base font-semibold text-gray-900">{selectedAppointment.LichLamViec?.BacSi?.tenBS}</p>
+                    <p className="text-base font-semibold text-gray-900">{selectedAppointment.LichLamViec?.BacSi?.tenBS || 'N/A'}</p>
                   </div>
                   <div className="bg-white rounded-lg p-4">
                     <p className="text-sm text-gray-500 mb-1">Khoa</p>
-                    <p className="text-base font-semibold text-gray-900">{selectedAppointment.LichLamViec?.BacSi?.Khoa?.tenKhoa}</p>
+                    <p className="text-base font-semibold text-gray-900">{selectedAppointment.LichLamViec?.BacSi?.Khoa?.tenKhoa || 'N/A'}</p>
                   </div>
                   <div className="bg-white rounded-lg p-4">
                     <p className="text-sm text-gray-500 mb-1">Dịch vụ</p>
                     <p className="text-base font-semibold text-gray-900">
-                      {selectedAppointment.DichVu?.map(dv => dv.tenDV).join(', ')}
+                      {selectedAppointment.DichVu?.map(dv => dv.tenDV).join(', ') || 'Không có'}
                     </p>
                   </div>
                   <div className="bg-white rounded-lg p-4">
@@ -645,10 +602,7 @@ const LichHenManagement = () => {
                 {selectedAppointment.trangThai === 'Chưa xác nhận' && (
                   <Button 
                     className="flex-1 h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-                    onClick={() => {
-                      toast.success('Xác nhận lịch hẹn thành công!')
-                      setSelectedAppointment(null)
-                    }}
+                    onClick={() => handleUpdateStatus(selectedAppointment._id || selectedAppointment.id, 'Đã xác nhận')}
                   >
                     <CheckCircle2 className="w-4 h-4 mr-2" />
                     Xác nhận lịch hẹn

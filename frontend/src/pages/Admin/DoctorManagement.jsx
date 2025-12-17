@@ -106,16 +106,15 @@ const DoctorManagement = () => {
         setEditingKhoa(null)
 
         setTimeout(() => {
-            // Cuộn container CardContent
+            // set thanh cuộn
             if (scrollContainerRef.current) {
                 scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' })
             }
-            // Hoặc cuộn window nếu cần
+            //cuộn window
             window.scrollTo({ top: 0, behavior: 'smooth' })
         }, 0)
     }
 
-    // Hàm mở form thêm khoa
     const handleAddKhoaClick = () => {
         setSelectedKhoa(null)
         setEditingKhoa(null)
@@ -128,9 +127,8 @@ const DoctorManagement = () => {
         setShowAddKhoaForm(true)
     }
 
-    // Hàm mở form sửa khoa
     const handleEditKhoaClick = (khoa, e) => {
-        e.stopPropagation() // Ngăn chặn sự kiện click lan ra card
+        e.stopPropagation() 
         setSelectedKhoa(null)
         setEditingKhoa(khoa)
         setKhoaFormData({
@@ -142,9 +140,8 @@ const DoctorManagement = () => {
         setShowAddKhoaForm(true)
     }
 
-    // Hàm lưu khoa (thêm hoặc sửa)
-    const handleSaveKhoa = async () => {  // Thêm async
-        // Validation giữ nguyên
+
+    const handleSaveKhoa = async () => {  
         if (!khoaFormData.tenKhoa || !khoaFormData.email || !khoaFormData.SDT || !khoaFormData.moTa) {
             toast.error('Vui lòng nhập đầy đủ thông tin!')
             return
@@ -183,7 +180,6 @@ const DoctorManagement = () => {
 
             await fetchKhoaList()
 
-            // Reset form
             setKhoaFormData({
                 tenKhoa: '',
                 email: '',
@@ -198,14 +194,12 @@ const DoctorManagement = () => {
         }
     }
 
-    // Hàm xóa khoa
-    const handleDeleteKhoa = async (khoa, e) => {  // Thêm async
+    const handleDeleteKhoa = async (khoa, e) => {  
         e.stopPropagation()
         if (window.confirm(`Bạn có chắc chắn muốn xóa khoa "${khoa.tenKhoa}"?`)) {
             try {
                 await fetchAllDoctors()
 
-                // Kiểm tra bác sĩ sau khi reload
                 const hasDoctors = doctorList.some(bs => {
                     const khoaId = bs.Khoa?._id || bs.Khoa
                     return khoaId === khoa._id
@@ -216,30 +210,25 @@ const DoctorManagement = () => {
                     return
                 }
 
-                //  Gọi API xóa khoa
                 await khoaService.deleteKhoa(khoa._id)
                 toast.success(`Đã xóa khoa "${khoa.tenKhoa}"`)
 
-                // Reload danh sách khoa
                 await fetchKhoaList()
 
-                // Reload lại danh sách bác sĩ
                 await fetchAllDoctors()
 
-                // Reset selectedKhoa nếu đang chọn khoa bị xóa
                 if (selectedKhoa && selectedKhoa._id === khoa._id) {
                     setSelectedKhoa(null)
                 }
             } catch (error) {
                 console.error('Lỗi khi xóa khoa:', error)
-                //  Hiển thị message từ backend nếu có
+
                 const errorMessage = error.message || error.data?.message || 'Có lỗi xảy ra khi xóa khoa'
                 toast.error(errorMessage)
             }
         }
     }
 
-    // Tính tổng số bác sĩ
     const totalDoctors = doctorList.length
     const totalKhoa = khoaList.length
 
@@ -366,7 +355,7 @@ const DoctorManagement = () => {
                                                                 variant="outline"
                                                                 size="sm"
                                                                 onClick={(e) => handleEditKhoaClick(khoa, e)}
-                                                                className="flex items-center gap-1"
+                                                                className="flex items-center gap-1 "
                                                             >
                                                                 <Edit className="w-4 h-4" />
                                                                 Sửa
@@ -388,7 +377,7 @@ const DoctorManagement = () => {
                                     </div>
                                 </div>
 
-                                {/* Cột phải: Form thêm/sửa khoa hoặc Danh sách bác sĩ */}
+                                {/*  thêm/sửa khoa hoặc Danh sách bác sĩ */}
                                 <div className="w-1/3 flex flex-col min-h-0">
                                     {showAddKhoaForm ? (
                                         <Card className="flex flex-col h-full max-h-full overflow-hidden">

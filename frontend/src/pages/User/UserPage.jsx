@@ -52,7 +52,7 @@ const UserPage = () => {
   const profileSectionRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState(null);
-  
+
   // Dữ liệu user info - sẽ được load từ API
   const [userInfo, setUserInfo] = useState({
     hoTen: '',
@@ -69,7 +69,11 @@ const UserPage = () => {
   const [examResults, setExamResults] = useState([]); // Danh sách kết quả khám bệnh
   const [showResultsModal, setShowResultsModal] = useState(false); // State để hiển thị modal
   const [loadingResults, setLoadingResults] = useState(false);
-  
+
+  // Modal xem chi tiết lịch hẹn
+  const [showAppointmentDetailModal, setShowAppointmentDetailModal] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+
   // State cho tư vấn trực tuyến
   const [showConsultationModal, setShowConsultationModal] = useState(false);
   const [consultationForm, setConsultationForm] = useState({
@@ -180,18 +184,18 @@ const UserPage = () => {
 
         const user = JSON.parse(userStr);
         const currentUserId = user._id || user.id;
-        
+
         if (!currentUserId) {
           toast.error('Không tìm thấy thông tin user!');
           return;
         }
 
         setUserId(currentUserId);
-        
+
         // Fetch user info từ API
         setLoading(true);
         const response = await userService.getUserInfo(currentUserId);
-        
+
         if (response.data) {
           const data = response.data;
           setUserInfo({
@@ -257,7 +261,7 @@ const UserPage = () => {
   // Handler để cập nhật thông tin
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
-    
+
     if (!userId) {
       toast.error('Không tìm thấy thông tin user!');
       return;
@@ -272,15 +276,24 @@ const UserPage = () => {
     try {
       setLoading(true);
       const response = await userService.updateUserInfo(userId, userInfo);
-      
+
       if (response.data) {
         toast.success(response.message || 'Cập nhật thông tin thành công!');
-        
-        // Cập nhật lại user trong localStorage nếu cần
+
+        const data = response.data;
+
+        // 1) cập nhật UI ngay
+        setUserInfo((prev) => ({
+          ...prev,
+          ...data,
+          ngaySinh: data.ngaySinh ? new Date(data.ngaySinh).toISOString().split('T')[0] : '',
+        }));
+
+        // 2) (tuỳ chọn) cập nhật localStorage nếu chỗ khác dùng user
         const userStr = localStorage.getItem('user');
         if (userStr) {
           const user = JSON.parse(userStr);
-          localStorage.setItem('user', JSON.stringify(user));
+          localStorage.setItem('user', JSON.stringify({ ...user, ...data }));
         }
       }
     } catch (error) {
@@ -295,10 +308,10 @@ const UserPage = () => {
   const handleLogout = () => {
     // Xóa token và user info
     authService.logout();
-    
+
     // Hiển thị thông báo
     toast.success('Đăng xuất thành công!');
-    
+
     // Chuyển hướng về trang login
     navigate('/');
   };
@@ -307,11 +320,11 @@ const UserPage = () => {
   const handleScrollToProfile = () => {
     // Scroll đến phần tabs
     if (profileSectionRef.current) {
-      profileSectionRef.current.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'start' 
+      profileSectionRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
       });
-      
+
       // Đảm bảo tab "profile" được active (nếu dùng controlled tabs)
       // Nếu dùng uncontrolled, có thể cần thêm state để control
     }
@@ -333,12 +346,22 @@ const UserPage = () => {
     }
   };
 
+  const openAppointmentDetail = (appointment) => {
+    setSelectedAppointment(appointment);
+    setShowAppointmentDetailModal(true);
+  };
+
+  const closeAppointmentDetail = () => {
+    setShowAppointmentDetailModal(false);
+    setSelectedAppointment(null);
+  };
+
   // Handler mở modal tư vấn
   const handleOpenConsultation = async () => {
     try {
       setShowConsultationModal(true);
       setLoadingConsultation(true);
-      
+
       // Load danh sách khoa
       const khoaResponse = await khoaService.getAllKhoa();
       if (Array.isArray(khoaResponse)) {
@@ -376,7 +399,7 @@ const UserPage = () => {
 
     try {
       setSendingQuestion(true);
-      
+
       const response = await tuVanService.createTuVan({
         userId: userId,
         khoaId: consultationForm.khoa || null,
@@ -386,10 +409,10 @@ const UserPage = () => {
 
       if (response.data) {
         toast.success('Câu hỏi đã được gửi! AI đang xử lý...');
-        
+
         // Thêm vào lịch sử
         setConsultationHistory(prev => [response.data, ...prev]);
-        
+
         // Reset form
         setConsultationForm({
           khoa: '',
@@ -421,7 +444,7 @@ const UserPage = () => {
   const handleViewResults = async () => {
     try {
       setLoadingResults(true);
-      
+
       if (!userId) {
         toast.error('Không tìm thấy thông tin user!');
         return;
@@ -429,7 +452,7 @@ const UserPage = () => {
 
       // Load lại danh sách lịch hẹn để lấy kết quả mới nhất
       const appointmentsResponse = await userService.getAppointments(userId);
-      
+
       if (appointmentsResponse.data && Array.isArray(appointmentsResponse.data)) {
         // Lọc ra các lịch hẹn đã khám và có ghi chú của bác sĩ
         const results = appointmentsResponse.data
@@ -471,44 +494,44 @@ const UserPage = () => {
   ];
 
   const getStatusConfig = (status) => {
-    switch(status) {
-    case 'Đã xác nhận':
-      return { 
-        icon: CheckCircle, 
-        variant: 'default',
-        className: 'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-      };
-    case 'Chưa xác nhận':
-      return { 
-        icon: AlertCircle, 
-        variant: 'secondary',
-        className: 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100'
-      };
-    case 'Đã hủy':
-      return { 
-        icon: XCircle, 
-        variant: 'destructive',
-        className: 'bg-red-100 text-red-700 border-red-200 hover:bg-red-100'
-      };
-    case 'Đã khám':
-      return { 
-        icon: CheckCircle, 
-        variant: 'outline',
-        className: 'bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-100'
-      };
-    default:
-      return { 
-        icon: AlertCircle, 
-        variant: 'outline',
-        className: 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-100'
-      };
+    switch (status) {
+      case 'Đã xác nhận':
+        return {
+          icon: CheckCircle,
+          variant: 'default',
+          className: 'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+        };
+      case 'Chưa xác nhận':
+        return {
+          icon: AlertCircle,
+          variant: 'secondary',
+          className: 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100'
+        };
+      case 'Đã hủy':
+        return {
+          icon: XCircle,
+          variant: 'destructive',
+          className: 'bg-red-100 text-red-700 border-red-200 hover:bg-red-100'
+        };
+      case 'Đã khám':
+        return {
+          icon: CheckCircle,
+          variant: 'outline',
+          className: 'bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-100'
+        };
+      default:
+        return {
+          icon: AlertCircle,
+          variant: 'outline',
+          className: 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-100'
+        };
     }
   };
 
   return (
     <BackgroundUser>
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full backdrop-blur-xl bg-white/80 shadow-sm border-b border-blue-100">
+      <header className="sticky top-0 z-50 w-full backdrop-blur-xl bg-white/80 shadow-sm border-b border-blue-100 hide-scrollbar">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             {/* Logo Section */}
@@ -529,7 +552,7 @@ const UserPage = () => {
 
             {/* User Info & Actions */}
             <div className="flex items-center gap-2 sm:gap-4">
-              <div 
+              <div
                 className="hidden lg:flex items-center gap-3 px-4 py-2.5 bg-gradient-to-r from-blue-50 to-teal-50 rounded-xl border border-blue-100 cursor-pointer hover:shadow-md transition-shadow"
                 onClick={handleScrollToProfile}
               >
@@ -557,10 +580,10 @@ const UserPage = () => {
           </div>
         </div>
       </header>
-      
+
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-7xl">
         {/* Welcome Banner */}
-        <div className="mb-6 sm:mb-8 relative overflow-hidden rounded-2xl sm:rounded-3xl shadow-2xl">
+        <div className="mb-6 sm:mb-8 relative overflow-hidden rounded-2xl sm:rounded-3xl shadow-2xl hide-scrollbar">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-blue-500 to-teal-500"></div>
           <div className="absolute inset-0 opacity-10">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full -mr-32 -mt-32"></div>
@@ -599,8 +622,8 @@ const UserPage = () => {
             {services.map((service) => {
               const IconComponent = service.icon;
               return (
-                <Card 
-                  key={service.id} 
+                <Card
+                  key={service.id}
                   className="group cursor-pointer border-2 hover:border-blue-300 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
                   onClick={() => handleServiceClick(service.id)}
                 >
@@ -618,7 +641,7 @@ const UserPage = () => {
 
         {/* PHẦN GIỚI THIỆU BỆNH VIỆN - Thêm sau phần Quick Services (sau dòng 299) */}
         <div className="mb-6 sm:mb-8">
-          <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-teal-500 rounded-3xl shadow-2xl overflow-hidden relative">
+          <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-teal-500 rounded-3xl shadow-2xl overflow-hidden relative hide-scrollbar">
             <div className="absolute inset-0 opacity-10">
               <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full -mr-48 -mt-48"></div>
               <div className="absolute bottom-0 left-0 w-72 h-72 bg-white rounded-full -ml-36 -mb-36"></div>
@@ -633,19 +656,19 @@ const UserPage = () => {
                     Giới thiệu về Bệnh viện
                   </h2>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                   <div className="space-y-4">
                     <p className="text-lg text-blue-50 leading-relaxed">
-                      Bệnh viện chúng tôi là hệ thống y tế hàng đầu với nhiều năm kinh nghiệm trong việc chăm sóc sức khỏe toàn diện. 
+                      Bệnh viện chúng tôi là hệ thống y tế hàng đầu với nhiều năm kinh nghiệm trong việc chăm sóc sức khỏe toàn diện.
                       Chúng tôi tự hào mang đến dịch vụ y tế chất lượng cao với đội ngũ bác sĩ giàu kinh nghiệm và trang thiết bị hiện đại.
                     </p>
                     <p className="text-base text-blue-100">
-                      Với mục tiêu "Chăm sóc sức khỏe - Nâng cao chất lượng cuộc sống", chúng tôi cam kết mang đến cho bạn 
+                      Với mục tiêu "Chăm sóc sức khỏe - Nâng cao chất lượng cuộc sống", chúng tôi cam kết mang đến cho bạn
                       những dịch vụ y tế tốt nhất với sự tận tâm và chuyên nghiệp.
                     </p>
                   </div>
-                  
+
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center">
@@ -709,20 +732,19 @@ const UserPage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {healthPackages.map((pkg) => (
-              <Card 
-                key={pkg.id} 
-                className={`relative overflow-hidden border-2 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 ${
-                  pkg.popular 
-                    ? 'border-blue-400 shadow-xl ring-4 ring-blue-100' 
-                    : 'border-blue-100 hover:border-blue-300'
-                }`}
+              <Card
+                key={pkg.id}
+                className={`relative overflow-hidden border-2 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hide-scrollbar ${pkg.popular
+                  ? 'border-blue-400 shadow-xl ring-4 ring-blue-100'
+                  : 'border-blue-100 hover:border-blue-300'
+                  }`}
               >
                 {pkg.popular && (
                   <div className="absolute top-0 right-0 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold px-4 py-1 rounded-bl-lg">
                     PHỔ BIẾN
                   </div>
                 )}
-                
+
                 <CardHeader className={`bg-gradient-to-br ${pkg.color} text-white pb-4`}>
                   <div className="flex items-start justify-between">
                     <CardTitle className="text-lg sm:text-xl font-bold text-white">
@@ -761,7 +783,7 @@ const UserPage = () => {
                       <Clock className="w-4 h-4 text-blue-600" />
                       <span>Thời gian: {pkg.duration}</span>
                     </div>
-                    
+
                     <div className="mt-4">
                       <p className="text-sm font-semibold text-gray-800 mb-2">Bao gồm:</p>
                       <ul className="space-y-2">
@@ -779,7 +801,7 @@ const UserPage = () => {
                 <CardFooter className="pt-0 pb-6 px-6">
                   <Button
                     className={`w-full bg-gradient-to-r ${pkg.color} hover:opacity-90 text-white shadow-lg`}
-                    onClick={() => handleBookPackage(pkg.id)}
+                    onClick={() => navigate('/dat-lich-kham')}
                   >
                     <Calendar className="w-4 h-4 mr-2" />
                     Đặt lịch ngay
@@ -794,24 +816,24 @@ const UserPage = () => {
         <div ref={profileSectionRef} id="profile-section">
           <Tabs defaultValue="profile" className="space-y-6">
             <TabsList className="grid w-full grid-cols-3 h-auto p-1.5 bg-white rounded-xl shadow-md border-2 border-blue-100">
-              <TabsTrigger 
-                value="profile" 
+              <TabsTrigger
+                value="profile"
                 className="flex items-center gap-2 rounded-lg py-2.5 sm:py-3 text-xs sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=inactive]:bg-white data-[state=inactive]:text-gray-700"
               >
                 <UserCircle className="w-4 h-4" />
                 <span className="hidden sm:inline">Thông tin</span>
                 <span className="sm:hidden">Hồ sơ</span>
               </TabsTrigger>
-              <TabsTrigger 
-                value="appointments" 
+              <TabsTrigger
+                value="appointments"
                 className="flex items-center gap-2 rounded-lg py-2.5 sm:py-3 text-xs sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=inactive]:bg-white data-[state=inactive]:text-gray-700"
               >
                 <CalendarCheck className="w-4 h-4" />
                 <span className="hidden sm:inline">Lịch hẹn</span>
                 <span className="sm:hidden">Hẹn</span>
               </TabsTrigger>
-              <TabsTrigger 
-                value="history" 
+              <TabsTrigger
+                value="history"
                 className="flex items-center gap-2 rounded-lg py-2.5 sm:py-3 text-xs sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=inactive]:bg-white data-[state=inactive]:text-gray-700"
               >
                 <History className="w-4 h-4" />
@@ -824,7 +846,7 @@ const UserPage = () => {
             <TabsContent value="profile" className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Profile Card */}
-                <Card className="lg:col-span-1 shadow-xl border-2 border-blue-100 overflow-hidden">
+                <Card className="lg:col-span-1 shadow-xl border-2 border-blue-100 overflow-hidden hide-scrollbar">
                   <div className="h-32 bg-gradient-to-r from-blue-600 via-blue-500 to-teal-500 relative">
                     <div className="absolute inset-0 opacity-20">
                       <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full -mr-16 -mt-16"></div>
@@ -847,9 +869,9 @@ const UserPage = () => {
                     </div>
                     <h3 className="text-2xl mt-4 mb-1 text-gray-800">{userInfo.hoTen}</h3>
                     <p className="text-sm text-gray-600 mb-6">{userInfo.email}</p>
-                    
+
                     <Separator className="my-6" />
-                    
+
                     <div className="space-y-4 text-left">
                       <div className="flex items-start gap-3 p-3 bg-gradient-to-r from-blue-50 to-teal-50 rounded-xl">
                         <Phone className="w-5 h-5 text-blue-600 mt-0.5" />
@@ -895,7 +917,9 @@ const UserPage = () => {
                     <CardDescription>Chỉnh sửa thông tin cá nhân của bạn</CardDescription>
                   </CardHeader>
                   <CardContent className="pt-6">
-                    <form className="space-y-5" onSubmit={handleUpdateProfile}>
+                    <form id="update-profile-form"
+                      className="space-y-5"
+                      onSubmit={handleUpdateProfile}>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div className="space-y-2">
                           <Label htmlFor="hoTen" className="flex items-center gap-2">
@@ -905,7 +929,7 @@ const UserPage = () => {
                           <Input
                             id="hoTen"
                             value={userInfo.hoTen}
-                            onChange={(e) => setUserInfo({...userInfo, hoTen: e.target.value})}
+                            onChange={(e) => setUserInfo({ ...userInfo, hoTen: e.target.value })}
                             className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
                           />
                         </div>
@@ -918,7 +942,7 @@ const UserPage = () => {
                             id="email"
                             type="email"
                             value={userInfo.email}
-                            onChange={(e) => setUserInfo({...userInfo, email: e.target.value})}
+                            onChange={(e) => setUserInfo({ ...userInfo, email: e.target.value })}
                             className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
                           />
                         </div>
@@ -930,7 +954,7 @@ const UserPage = () => {
                           <Input
                             id="SDT"
                             value={userInfo.SDT}
-                            onChange={(e) => setUserInfo({...userInfo, SDT: e.target.value})}
+                            onChange={(e) => setUserInfo({ ...userInfo, SDT: e.target.value })}
                             className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
                           />
                         </div>
@@ -943,7 +967,7 @@ const UserPage = () => {
                             id="ngaySinh"
                             type="date"
                             value={userInfo.ngaySinh}
-                            onChange={(e) => setUserInfo({...userInfo, ngaySinh: e.target.value})}
+                            onChange={(e) => setUserInfo({ ...userInfo, ngaySinh: e.target.value })}
                             className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
                           />
                         </div>
@@ -955,7 +979,7 @@ const UserPage = () => {
                           <select
                             id="gioiTinh"
                             value={userInfo.gioiTinh}
-                            onChange={(e) => setUserInfo({...userInfo, gioiTinh: e.target.value})}
+                            onChange={(e) => setUserInfo({ ...userInfo, gioiTinh: e.target.value })}
                             className="flex h-9 w-full rounded-md border border-blue-200 bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                           >
                             <option value="Nam">Nam</option>
@@ -972,24 +996,25 @@ const UserPage = () => {
                         <Input
                           id="diaChi"
                           value={userInfo.diaChi}
-                          onChange={(e) => setUserInfo({...userInfo, diaChi: e.target.value})}
+                          onChange={(e) => setUserInfo({ ...userInfo, diaChi: e.target.value })}
                           className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
                         />
                       </div>
                     </form>
                   </CardContent>
                   <CardFooter className="flex gap-3 pt-4 border-t-2 border-blue-50 bg-gradient-to-r from-blue-50/30 to-teal-50/30">
-                    <Button 
+                    <Button
                       type="submit"
+                      form="update-profile-form"
                       className="flex-1 bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 shadow-md"
                       disabled={loading}
                     >
                       <CheckCircle className="w-4 h-4 mr-2" />
                       {loading ? 'Đang lưu...' : 'Lưu thay đổi'}
                     </Button>
-                    <Button 
+                    <Button
                       type="button"
-                      variant="outline" 
+                      variant="outline"
                       className="flex-1 border-blue-200 hover:bg-blue-50"
                       onClick={() => window.location.reload()}
                       disabled={loading}
@@ -1011,7 +1036,7 @@ const UserPage = () => {
                   </h2>
                   <p className="text-sm text-gray-600 mt-1">Quản lý các cuộc hẹn của bạn</p>
                 </div>
-                <Button 
+                <Button
                   className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 shadow-md"
                   onClick={() => navigate('/dat-lich-kham')}
                 >
@@ -1024,9 +1049,9 @@ const UserPage = () => {
                 {upcomingAppointments.map((appointment) => {
                   const statusConfig = getStatusConfig(appointment.trangThai);
                   const StatusIcon = statusConfig.icon;
-                  
+
                   return (
-                    <Card key={appointment.id} className="group hover:shadow-2xl transition-all duration-300 border-2 border-blue-100 overflow-hidden">
+                    <Card key={appointment.id} className="group hover:shadow-2xl transition-all duration-300 border-2 border-blue-100 overflow-hidden hide-scrollbar">
                       <div className="h-2 bg-gradient-to-r from-blue-600 to-teal-600"></div>
                       <CardHeader className="pb-3 bg-gradient-to-r from-blue-50/50 to-teal-50/50">
                         <div className="flex justify-between items-start gap-3">
@@ -1052,11 +1077,11 @@ const UserPage = () => {
                           <div>
                             <p className="text-xs text-gray-600">Ngày khám</p>
                             <p className="font-semibold text-gray-800">
-                              {new Date(appointment.ngayHen).toLocaleDateString('vi-VN', { 
-                                weekday: 'long', 
-                                year: 'numeric', 
-                                month: 'long', 
-                                day: 'numeric' 
+                              {new Date(appointment.ngayHen).toLocaleDateString('vi-VN', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
                               })}
                             </p>
                           </div>
@@ -1072,15 +1097,20 @@ const UserPage = () => {
                         </div>
                       </CardContent>
                       <CardFooter className="flex gap-2 pt-4 border-t-2 border-blue-50">
-                        <Button variant="outline" size="sm" className="flex-1 border-blue-200 hover:bg-blue-50">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 border-blue-200 hover:bg-blue-50"
+                          onClick={() => openAppointmentDetail(appointment)}
+                        >
                           Chi tiết
                         </Button>
-                        {appointment.trangThai === 'Chưa xác nhận' && (
+                        {/* {appointment.trangThai === 'Chưa xác nhận' && (
                           <Button size="sm" variant="destructive" className="flex-1">
                             <XCircle className="w-4 h-4 mr-1" />
                             Hủy lịch
                           </Button>
-                        )}
+                        )} */}
                       </CardFooter>
                     </Card>
                   );
@@ -1094,7 +1124,7 @@ const UserPage = () => {
                       <CalendarCheck className="w-10 h-10 text-blue-600" />
                     </div>
                     <p className="text-gray-600 mb-2">Bạn chưa có lịch hẹn nào sắp tới</p>
-                    <Button 
+                    <Button
                       className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 mt-4"
                       onClick={() => navigate('/dat-lich-kham')}
                     >
@@ -1120,9 +1150,9 @@ const UserPage = () => {
                 {appointmentHistory.map((appointment) => {
                   const statusConfig = getStatusConfig(appointment.trangThai);
                   const StatusIcon = statusConfig.icon;
-                  
+
                   return (
-                    <Card key={appointment.id} className="hover:shadow-xl transition-all duration-300 border-2 border-blue-100 overflow-hidden">
+                    <Card key={appointment.id} className="hover:shadow-xl transition-all duration-300 border-2 border-blue-100 overflow-hidden hide-scrollbar">
                       <div className="h-1.5 bg-gradient-to-r from-blue-600 to-teal-600"></div>
                       <CardContent className="pt-6">
                         <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
@@ -1161,7 +1191,12 @@ const UserPage = () => {
                               <StatusIcon className="w-3 h-3" />
                               {appointment.trangThai}
                             </Badge>
-                            <Button variant="outline" size="sm" className="border-blue-200 hover:bg-blue-50">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="border-blue-200 hover:bg-blue-50"
+                              onClick={() => openAppointmentDetail(appointment)}
+                            >
                               <FileText className="w-4 h-4 mr-1" />
                               Xem chi tiết
                             </Button>
@@ -1191,16 +1226,16 @@ const UserPage = () => {
       {/* Modal hiển thị kết quả khám bệnh */}
       {showResultsModal && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in duration-200"
           onClick={() => setShowResultsModal(false)}
         >
           <Card
-            className="w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl border-0 animate-in zoom-in-95 duration-200"
+            className="w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl border-0 animate-in zoom-in-95 duration-200 p-0"
             onClick={(e) => e.stopPropagation()}
           >
-            <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-teal-50 flex-shrink-0">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <CardHeader className="border-b border-boder rounded-t-xl bg-gradient-to-r from-blue-50 to-teal-50 flex-shrink-0">
+              <div className="flex items-center justify-between top-0 p-0 ">
+                <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900 flex justify-center items-center gap-2 p-3">
                   <div className="bg-gradient-to-br from-blue-600 to-teal-600 rounded-lg p-2">
                     <ClipboardList className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                   </div>
@@ -1219,7 +1254,7 @@ const UserPage = () => {
                 Danh sách kết quả khám bệnh đã được bác sĩ xác nhận
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-4 sm:p-6 flex-1 overflow-y-auto">
+            <CardContent className="p-4 sm:p-6 flex-1 overflow-y-auto hide-scrollbar">
               {loadingResults ? (
                 <div className="text-center py-12">
                   <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-100 to-teal-100 flex items-center justify-center animate-spin">
@@ -1316,16 +1351,7 @@ const UserPage = () => {
                 </div>
               )}
             </CardContent>
-            <CardFooter className="flex justify-end pt-3 pb-4 px-4 sm:px-6 border-t-2 border-blue-50 bg-gradient-to-r from-blue-50/30 to-teal-50/30 flex-shrink-0">
-              <Button
-                variant="outline"
-                onClick={() => setShowResultsModal(false)}
-                className="border-blue-200 hover:bg-blue-50"
-                size="sm"
-              >
-                Đóng
-              </Button>
-            </CardFooter>
+
           </Card>
         </div>
       )}
@@ -1337,10 +1363,10 @@ const UserPage = () => {
           onClick={() => setShowConsultationModal(false)}
         >
           <Card
-            className="w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl border-0 animate-in zoom-in-95 duration-200"
+            className="w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl border-0 animate-in zoom-in-95 duration-200 p-0"
             onClick={(e) => e.stopPropagation()}
           >
-            <CardHeader className="border-b bg-gradient-to-r from-teal-50 to-blue-50 sticky top-0 z-10 flex-shrink-0">
+            <CardHeader className="border-b border-boder rounded-t-xl bg-gradient-to-r from-teal-50 to-blue-50 sticky top-0 z-10 flex-shrink-0 p-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
                   <div className="bg-gradient-to-br from-teal-600 to-blue-600 rounded-lg p-2">
@@ -1361,8 +1387,8 @@ const UserPage = () => {
                 Đặt câu hỏi về sức khỏe và nhận tư vấn từ AI chatbot
               </CardDescription>
             </CardHeader>
-            
-            <CardContent className="p-4 sm:p-6 flex-1 overflow-y-auto flex flex-col">
+
+            <CardContent className="p-4 sm:p-6 flex-1 overflow-y-auto flex flex-col hide-scrollbar">
               {/* Form đặt câu hỏi */}
               <div className="mb-6 space-y-4 bg-gradient-to-r from-teal-50 to-blue-50 rounded-xl p-4 border-2 border-teal-100">
                 <div className="space-y-2">
@@ -1384,7 +1410,7 @@ const UserPage = () => {
                     ))}
                   </select>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="consultation-question" className="flex items-center gap-2 text-sm font-semibold">
                     <MessageSquare className="w-4 h-4 text-teal-600" />
@@ -1400,7 +1426,7 @@ const UserPage = () => {
                     disabled={sendingQuestion}
                   />
                 </div>
-                
+
                 <Button
                   onClick={handleSendQuestion}
                   disabled={sendingQuestion || !consultationForm.cauHoi.trim()}
@@ -1426,7 +1452,7 @@ const UserPage = () => {
                   <History className="w-5 h-5 text-teal-600" />
                   Lịch sử tư vấn
                 </h3>
-                
+
                 {loadingConsultation ? (
                   <div className="text-center py-8">
                     <Activity className="w-8 h-8 mx-auto mb-2 text-teal-600 animate-spin" />
@@ -1439,7 +1465,7 @@ const UserPage = () => {
                     <p className="text-gray-500 text-sm">Hãy đặt câu hỏi để bắt đầu tư vấn!</p>
                   </div>
                 ) : (
-                  <div className="space-y-4 max-h-[400px] overflow-y-auto">
+                  <div className="space-y-4 max-h-[400px] overflow-y-auto hide-scrollbar">
                     {consultationHistory.map((item) => (
                       <div key={item._id} className="space-y-3">
                         {/* Câu hỏi */}
@@ -1502,15 +1528,117 @@ const UserPage = () => {
                 )}
               </div>
             </CardContent>
-            
-            <CardFooter className="flex justify-end pt-3 pb-4 px-4 sm:px-6 border-t-2 border-teal-50 bg-gradient-to-r from-teal-50/30 to-blue-50/30 flex-shrink-0">
-              <Button
-                variant="outline"
-                onClick={() => setShowConsultationModal(false)}
-                className="border-teal-200 hover:bg-teal-50"
-                size="sm"
-              >
+
+          </Card>
+        </div>
+      )}
+
+      {/* Modal xem chi tiết lịch hẹn */}
+      {showAppointmentDetailModal && selectedAppointment && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={closeAppointmentDetail}
+        >
+          <Card
+            className="w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl border-0 animate-in zoom-in-95 duration-200 p-0 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="h-2 bg-gradient-to-r from-blue-600 to-teal-600"></div>
+            <CardHeader className="border-b border-blue-100 bg-gradient-to-r from-blue-50 to-teal-50 flex-shrink-0">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">
+                    Chi tiết lịch hẹn
+                  </CardTitle>
+
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={closeAppointmentDetail}
+                  className="hover:bg-red-50 hover:text-red-600"
+                >
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-4 sm:p-6 flex-1 overflow-y-auto hide-scrollbar">
+              {(() => {
+                const statusConfig = getStatusConfig(selectedAppointment.trangThai);
+                const StatusIcon = statusConfig?.icon;
+                return (
+                  <div className="space-y-4">
+                    <div className="flex justify-end">
+                      <Badge
+                        variant={statusConfig.variant}
+                        className={`${statusConfig.className} flex items-center gap-1`}
+                      >
+                        {StatusIcon ? <StatusIcon className="w-3 h-3" /> : null}
+                        {selectedAppointment.trangThai}
+                      </Badge>
+                    </div>
+
+                    <div className="p-4 rounded-xl border-2 border-blue-100 bg-white">
+                      <p className="text-sm text-gray-600 mb-1">Dịch vụ</p>
+                      <p className="text-lg font-semibold text-blue-700">
+                        {selectedAppointment.dichVu}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="p-4 rounded-xl border-2 border-blue-100 bg-gradient-to-r from-blue-50 to-teal-50">
+                        <p className="text-sm text-gray-600 mb-1">Khoa</p>
+                        <p className="font-semibold text-gray-800">{selectedAppointment.khoa}</p>
+                      </div>
+                      <div className="p-4 rounded-xl border-2 border-blue-100 bg-gradient-to-r from-blue-50 to-teal-50">
+                        <p className="text-sm text-gray-600 mb-1">Bác sĩ</p>
+                        <p className="font-semibold text-gray-800">{selectedAppointment.bacSi}</p>
+                      </div>
+                      <div className="p-4 rounded-xl border-2 border-blue-100 bg-gradient-to-r from-blue-50 to-teal-50">
+                        <p className="text-sm text-gray-600 mb-1">Ngày khám</p>
+                        <p className="font-semibold text-gray-800">
+                          {new Date(selectedAppointment.ngayHen).toLocaleDateString('vi-VN', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })}
+                        </p>
+                      </div>
+                      <div className="p-4 rounded-xl border-2 border-blue-100 bg-gradient-to-r from-blue-50 to-teal-50">
+                        <p className="text-sm text-gray-600 mb-1">Giờ khám</p>
+                        <p className="font-semibold text-gray-800 text-lg">
+                          {selectedAppointment.gioHen}
+                        </p>
+                      </div>
+                    </div>
+
+                    {selectedAppointment.ghiChuBacSi && selectedAppointment.ghiChuBacSi.trim() !== '' && (
+                      <div className="p-4 rounded-xl border-2 border-emerald-100 bg-emerald-50">
+                        <p className="text-sm text-emerald-700 font-semibold mb-2">
+                          Ghi chú của bác sĩ
+                        </p>
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                          {selectedAppointment.ghiChuBacSi}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </CardContent>
+
+            <CardFooter className="p-4 border-t border-blue-100 flex gap-2 justify-end flex-shrink-0">
+              <Button variant="outline" className="border-blue-200" onClick={closeAppointmentDetail}>
                 Đóng
+              </Button>
+              <Button
+                className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 shadow-md"
+                onClick={() => navigate('/dat-lich-kham')}
+              >
+                <Calendar className="w-4 h-4 mr-2" />
+                Đặt lịch mới
               </Button>
             </CardFooter>
           </Card>

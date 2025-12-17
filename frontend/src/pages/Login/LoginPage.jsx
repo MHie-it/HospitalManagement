@@ -191,16 +191,17 @@ const LoginPage = () => {
               Đăng nhập
             </Button>
 
-            <p className="text-left text-m mt-4">
+            <p className="text-left text-m ">
               <button
                 type="button"
                 onClick={() => setShowForgotPassword(true)}
-                className="text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
+                className="  cursor-pointer p-0 m-0"
               >
                 Quên mật khẩu?
               </button>
             </p>
-            <p className="text-left text-m ">Bạn chưa có tài khoản?
+            
+            <p className="text-left text-m pl-5">Bạn chưa có tài khoản?
               <Link to="/register"
                 className="ml-2 hover:color-red">
                 Đăng ký ngay!

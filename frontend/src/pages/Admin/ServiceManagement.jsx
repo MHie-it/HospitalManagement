@@ -254,15 +254,15 @@ const ServiceManagement = () => {
 
   return (
     <Backgound>
-      <div className="flex w-full h-screen m-0 p-0">
+      <div className="flex w-full h-screen m-0 p-0 overflow-hidden">
         {/* Sidebar */}
         <div className="w-[250px]">
           <Dashboard />
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 p-6 overflow-auto">
-          <Card className="h-full">
+        <div className="flex-1 flex-col p-6 overflow-auto hide-scrollbar">
+          <Card className=" flex flex-col overflow-hidden h-full">
             <CardHeader>
               <div className="flex justify-between items-center">
                 <div>
@@ -284,119 +284,42 @@ const ServiceManagement = () => {
               </div>
             </CardHeader>
 
-            <CardContent>
-              {/* Form thêm/sửa dịch vụ */}
-              {showForm && (
-                <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold">
-                      {editingService ? 'Sửa dịch vụ' : 'Thêm dịch vụ mới'}
-                    </h3>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setShowForm(false)
-                        setEditingService(null)
-                      }}
-                      className="h-8 w-8 p-0"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  <div className="grid gap-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">
-                        Tên dịch vụ <span className="text-red-500">*</span>
-                      </label>
-                      <Input
-                        placeholder="Nhập tên dịch vụ"
-                        value={formData.tenDV}
-                        onChange={(e) => setFormData({ ...formData, tenDV: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">
-                        Mô tả <span className="text-red-500">*</span>
-                      </label>
-                      <textarea
-                        className="w-full min-h-[80px] rounded-md border border-input bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Nhập mô tả dịch vụ"
-                        value={formData.moTa}
-                        onChange={(e) => setFormData({ ...formData, moTa: e.target.value })}
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">
-                          Giá tiền (VND) <span className="text-red-500">*</span>
-                        </label>
-                        <Input
-                          type="number"
-                          placeholder="Nhập giá tiền"
-                          value={formData.giaTien}
-                          onChange={(e) => setFormData({ ...formData, giaTien: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">
-                          Khoa <span className="text-red-500">*</span>
-                        </label>
-                        <select
-                          className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          value={formData.Khoa}
-                          onChange={(e) => {
-                            console.log('Chọn khoa:', e.target.value)
-                            setFormData({ ...formData, Khoa: e.target.value })
-                          }}
-                        >
-                          <option value="">Chọn khoa</option>
-                          {khoaList.map(khoa => (
-                            <option key={khoa._id || khoa.id} value={khoa._id || khoa.id}>
-                              {khoa.tenKhoa}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+            <CardContent className="flex-1 overflow-y-auto min-h-0 hide-scrollbar">
 
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">
-                        Loại dịch vụ <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={formData.LoaiDichVu}
-                        onChange={(e) => {
-                          console.log('Chọn loại dịch vụ:', e.target.value)
-                          setFormData({ ...formData, LoaiDichVu: e.target.value })
-                        }}
-                      >
-                        <option value="">Chọn loại dịch vụ</option>
-                        {loaiDichVuList.map(loai => (
-                          <option key={loai._id || loai.id} value={loai._id || loai.id}>
-                            {loai.loaiDV}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setShowForm(false)
-                          setEditingService(null)
-                        }}
-                      >
-                        Hủy
-                      </Button>
-                      <Button variant="gradient" onClick={handleSaveService}>
-                        {editingService ? 'Cập nhật' : 'Thêm dịch vụ'}
-                      </Button>
-                    </div>
+              {/* Thống kê */}
+              <div className="mt-3 mb-3  grid grid-cols-4 gap-4">
+                <div className="bg-blue-50 px-4 py-3 rounded-lg border border-blue-100">
+                  <div className="text-sm text-blue-600 font-medium">Tổng số dịch vụ</div>
+                  <div className="text-2xl font-bold text-blue-700 mt-1">
+                    {filteredServices.length}
                   </div>
+                  <div className="text-xs text-blue-500 mt-1">dịch vụ</div>
                 </div>
-              )}
+                <div className="bg-green-50 px-4 py-3 rounded-lg border border-green-100">
+                  <div className="text-sm text-green-600 font-medium">Tổng giá trị</div>
+                  <div className="text-2xl font-bold text-green-700 mt-1">
+                    {formatPrice(filteredServices.reduce((sum, s) => sum + s.giaTien, 0))}
+                  </div>
+                  <div className="text-xs text-green-500 mt-1">tổng cộng</div>
+                </div>
+                <div className="bg-purple-50 px-4 py-3 rounded-lg border border-purple-100">
+                  <div className="text-sm text-purple-600 font-medium">Giá trung bình</div>
+                  <div className="text-2xl font-bold text-purple-700 mt-1">
+                    {filteredServices.length > 0
+                      ? formatPrice(filteredServices.reduce((sum, s) => sum + s.giaTien, 0) / filteredServices.length)
+                      : formatPrice(0)
+                    }
+                  </div>
+                  <div className="text-xs text-purple-500 mt-1">mỗi dịch vụ</div>
+                </div>
+                <div className="bg-orange-50 px-4 py-3 rounded-lg border border-orange-100">
+                  <div className="text-sm text-orange-600 font-medium">Loại dịch vụ</div>
+                  <div className="text-2xl font-bold text-orange-700 mt-1">
+                    {new Set(filteredServices.map(s => s.loaiDV)).size}
+                  </div>
+                  <div className="text-xs text-orange-500 mt-1">loại khác nhau</div>
+                </div>
+              </div>
 
               {/* Thanh tìm kiếm */}
               <div className="mb-6">
@@ -462,7 +385,7 @@ const ServiceManagement = () => {
                               {service.loaiDV}
                             </span>
                           </td>
-                          
+
                           <td className="p-3">
                             <div className="flex gap-2">
                               <Button
@@ -492,44 +415,153 @@ const ServiceManagement = () => {
                 </table>
               </div>
 
-              {/* Thống kê */}
-              <div className="mt-6 grid grid-cols-4 gap-4">
-                <div className="bg-blue-50 px-4 py-3 rounded-lg border border-blue-100">
-                  <div className="text-sm text-blue-600 font-medium">Tổng số dịch vụ</div>
-                  <div className="text-2xl font-bold text-blue-700 mt-1">
-                    {filteredServices.length}
-                  </div>
-                  <div className="text-xs text-blue-500 mt-1">dịch vụ</div>
-                </div>
-                <div className="bg-green-50 px-4 py-3 rounded-lg border border-green-100">
-                  <div className="text-sm text-green-600 font-medium">Tổng giá trị</div>
-                  <div className="text-2xl font-bold text-green-700 mt-1">
-                    {formatPrice(filteredServices.reduce((sum, s) => sum + s.giaTien, 0))}
-                  </div>
-                  <div className="text-xs text-green-500 mt-1">tổng cộng</div>
-                </div>
-                <div className="bg-purple-50 px-4 py-3 rounded-lg border border-purple-100">
-                  <div className="text-sm text-purple-600 font-medium">Giá trung bình</div>
-                  <div className="text-2xl font-bold text-purple-700 mt-1">
-                    {filteredServices.length > 0
-                      ? formatPrice(filteredServices.reduce((sum, s) => sum + s.giaTien, 0) / filteredServices.length)
-                      : formatPrice(0)
-                    }
-                  </div>
-                  <div className="text-xs text-purple-500 mt-1">mỗi dịch vụ</div>
-                </div>
-                <div className="bg-orange-50 px-4 py-3 rounded-lg border border-orange-100">
-                  <div className="text-sm text-orange-600 font-medium">Loại dịch vụ</div>
-                  <div className="text-2xl font-bold text-orange-700 mt-1">
-                    {new Set(filteredServices.map(s => s.loaiDV)).size}
-                  </div>
-                  <div className="text-xs text-orange-500 mt-1">loại khác nhau</div>
-                </div>
-              </div>
+
             </CardContent>
           </Card>
         </div>
       </div>
+      {/* Form thêm/sửa dịch vụ */}
+      {showForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto m-4 border-2 border-gray-200 hide-scrollbar">
+            {/* Header Modal */}
+            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 rounded-t-2xl flex justify-between items-center z-10">
+              <h2 className="text-xl font-bold">
+                {editingService ? 'Sửa dịch vụ' : 'Thêm dịch vụ mới'}
+              </h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setShowForm(false)
+                  setEditingService(null)
+                  setFormData({
+                    tenDV: '',
+                    moTa: '',
+                    giaTien: '',
+                    Khoa: '',
+                    LoaiDichVu: ''
+                  })
+                }}
+                className="h-8 w-8 p-0 text-white hover:bg-white/20"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+
+            {/* Form Content */}
+            <div className="p-6 space-y-6 bg-gradient-to-br from-gray-50 to-blue-50">
+              <div>
+                <label className="text-sm font-medium mb-2 block text-gray-700">
+                  Tên dịch vụ <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  placeholder="Nhập tên dịch vụ"
+                  value={formData.tenDV}
+                  onChange={(e) => setFormData({ ...formData, tenDV: e.target.value })}
+                  className="h-12 text-base"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block text-gray-700">
+                  Mô tả <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  className="w-full min-h-[100px] px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-base"
+                  placeholder="Nhập mô tả dịch vụ"
+                  value={formData.moTa}
+                  onChange={(e) => setFormData({ ...formData, moTa: e.target.value })}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block text-gray-700">
+                    Giá tiền (VND) <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="number"
+                    placeholder="Nhập giá tiền"
+                    value={formData.giaTien}
+                    onChange={(e) => setFormData({ ...formData, giaTien: e.target.value })}
+                    className="h-12 text-base"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block text-gray-700">
+                    Khoa <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    className="w-full h-12 rounded-lg border-2 border-gray-300 bg-transparent px-4 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={formData.Khoa}
+                    onChange={(e) => {
+                      console.log('Chọn khoa:', e.target.value)
+                      setFormData({ ...formData, Khoa: e.target.value })
+                    }}
+                  >
+                    <option value="">Chọn khoa</option>
+                    {khoaList.map(khoa => (
+                      <option key={khoa._id || khoa.id} value={khoa._id || khoa.id}>
+                        {khoa.tenKhoa}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block text-gray-700">
+                  Loại dịch vụ <span className="text-red-500">*</span>
+                </label>
+                <select
+                  className="w-full h-12 rounded-lg border-2 border-gray-300 bg-transparent px-4 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value={formData.LoaiDichVu}
+                  onChange={(e) => {
+                    console.log('Chọn loại dịch vụ:', e.target.value)
+                    setFormData({ ...formData, LoaiDichVu: e.target.value })
+                  }}
+                >
+                  <option value="">Chọn loại dịch vụ</option>
+                  {loaiDichVuList.map(loai => (
+                    <option key={loai._id || loai.id} value={loai._id || loai.id}>
+                      {loai.loaiDV}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Footer Modal */}
+            <div className="sticky bottom-0 bg-gray-50 border-t-2 border-gray-200 p-6 rounded-b-2xl flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1 h-12"
+                onClick={() => {
+                  setShowForm(false)
+                  setEditingService(null)
+                  setFormData({
+                    tenDV: '',
+                    moTa: '',
+                    giaTien: '',
+                    Khoa: '',
+                    LoaiDichVu: ''
+                  })
+                }}
+              >
+                Hủy
+              </Button>
+              <Button
+                variant="gradient"
+                className="flex-1 h-12"
+                onClick={handleSaveService}
+              >
+                {editingService ? 'Cập nhật' : 'Thêm dịch vụ'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </Backgound>
   )
 }

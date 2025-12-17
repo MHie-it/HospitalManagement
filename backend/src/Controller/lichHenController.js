@@ -61,6 +61,47 @@ export const getLichHenByUserId = async (request, response) => {
     }
 };
 
+export const getAllLichHen = async (request, response) => {
+    try {
+        const lichHenList = await LichHen.find()
+            .populate('NguoiDung', 'hoTen SDT email diaChi gioiTinh ngaySinh')
+            .populate({
+                path: 'LichLamViec',
+                populate: {
+                    path: 'BacSi',
+                    select: 'tenBS',
+                    populate: {
+                        path: 'Khoa',
+                        select: 'tenKhoa'
+                    }
+                }
+            })
+            .populate('DichVu', 'tenDV giaTien')
+            .select('-__v')
+            .sort({ ngayHen: -1 });
+
+        // Format Decimal128 thành số
+        const formattedList = lichHenList.map(lh => ({
+            ...lh.toObject(),
+            DichVu: lh.DichVu.map(dv => ({
+                ...dv.toObject(),
+                giaTien: parseFloat(dv.giaTien.toString())
+            }))
+        }));
+
+        response.status(200).json({
+            message: "Lấy danh sách lịch hẹn thành công!",
+            data: formattedList
+        });
+    } catch (error) {
+        console.error(error);
+        response.status(500).json({
+            message: "Lỗi khi lấy danh sách lịch hẹn!",
+            error: error.message
+        });
+    }
+};
+
 // Tạo lịch hẹn mới
 export const createLichHen = async (request, response) => {
     try {

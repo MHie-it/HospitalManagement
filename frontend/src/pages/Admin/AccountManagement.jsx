@@ -9,9 +9,6 @@ import { toast } from 'sonner'
 import { khoaService } from '@/services/khoaService'
 import { authService } from '@/services/authService'
 
-
-
-
 const AccountManagement = () => {
   const [accounts, setAccounts] = useState([])
   const [khoaList, setKhoaList] = useState([])
@@ -67,7 +64,7 @@ const AccountManagement = () => {
 
       const data = await authService.getAllAccounts()
 
-      // Transform data từ BE về format FE cần
+      // chuẩn hóa lại dữ liệu
       const transformedAccounts = transformAccountsData(data)
       setAccounts(transformedAccounts)
     } catch (error) {
@@ -79,8 +76,7 @@ const AccountManagement = () => {
     }
   }
 
-  // Transform data từ BE về format FE
-  const transformAccountsData = (data) => {
+   const transformAccountsData = (data) => {
     if (Array.isArray(data)) {
       return data.map(account => ({
         id: account._id || account.id,
@@ -135,7 +131,7 @@ const AccountManagement = () => {
   })
 
   const handleAddAccount = async () => {
-    // Validation
+
     if (!newAccount.username || !newAccount.tenBS || !newAccount.email || !newAccount.SDT || !newAccount.ngaySinh || !newAccount.diaChi) {
       toast.error('Vui lòng nhập đầy đủ thông tin!')
       return
@@ -148,7 +144,7 @@ const AccountManagement = () => {
 
     setLoading(true)
     try {
-      // Dùng newAccount thay vì newDoctor
+   
       const response = await authService.registerDoctor({
         username: newAccount.username,
         tenBS: newAccount.tenBS,
@@ -162,7 +158,6 @@ const AccountManagement = () => {
 
       toast.success('Thêm tài khoản thành công!')
 
-      //  Reset form
       setNewAccount({
         username: '',
         tenBS: '',
@@ -177,7 +172,6 @@ const AccountManagement = () => {
       })
       setShowAddForm(false)
 
-      // Reload danh sách tài khoản
       await fetchAccounts()
     } catch (error) {
       console.error('Lỗi khi thêm tài khoản:', error)
@@ -187,7 +181,6 @@ const AccountManagement = () => {
     }
   }
 
-  //  Hàm đình chỉ/kích hoạt
   const handleToggleActive = async (id) => {
     const account = accounts.find(acc => acc.id === id)
     const newStatus = !account.isActive
@@ -195,7 +188,6 @@ const AccountManagement = () => {
     try {
       await authService.updateAccountStatus(id, newStatus)
 
-      // Update local state
       setAccounts(accounts.map(account =>
         account.id === id
           ? { ...account, isActive: newStatus }
@@ -247,7 +239,6 @@ const AccountManagement = () => {
 
             <CardContent >
               {/* Form thêm tài khoản - Hiển thị/ẩn đơn giản (không dùng Dialog) */}
-
               {showAddForm && (
                 <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
                   <div className="flex justify-between items-center mb-4">
@@ -424,7 +415,7 @@ const AccountManagement = () => {
                       <Search className="w-4 h-4" />
                       Seach
                     </label>
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    {/* <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" /> */}
                     <Input
                       placeholder="Tìm kiếm "
                       value={searchTerm}
