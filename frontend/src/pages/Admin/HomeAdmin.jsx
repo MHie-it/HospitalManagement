@@ -229,7 +229,7 @@ const HomeAdmin = () => {
               ))}
             </div>
 
-            {/* 2 cột: Danh sách khoa + Hoạt động gần đây */}
+            {/* Danh sách khoa + Hoạt động gần đây */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 ">
               {/* Danh sách khoa */}
               <Card>

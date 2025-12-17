@@ -64,7 +64,7 @@ const AccountManagement = () => {
 
       const data = await authService.getAllAccounts()
 
-      // Transform data từ BE về format FE cần
+      // chuẩn hóa lại dữ liệu
       const transformedAccounts = transformAccountsData(data)
       setAccounts(transformedAccounts)
     } catch (error) {
@@ -76,8 +76,7 @@ const AccountManagement = () => {
     }
   }
 
-  // Transform data từ BE về format FE
-  const transformAccountsData = (data) => {
+   const transformAccountsData = (data) => {
     if (Array.isArray(data)) {
       return data.map(account => ({
         id: account._id || account.id,
@@ -132,7 +131,7 @@ const AccountManagement = () => {
   })
 
   const handleAddAccount = async () => {
-    // Validation
+
     if (!newAccount.username || !newAccount.tenBS || !newAccount.email || !newAccount.SDT || !newAccount.ngaySinh || !newAccount.diaChi) {
       toast.error('Vui lòng nhập đầy đủ thông tin!')
       return
@@ -145,7 +144,7 @@ const AccountManagement = () => {
 
     setLoading(true)
     try {
-      // Dùng newAccount thay vì newDoctor
+   
       const response = await authService.registerDoctor({
         username: newAccount.username,
         tenBS: newAccount.tenBS,
@@ -159,7 +158,6 @@ const AccountManagement = () => {
 
       toast.success('Thêm tài khoản thành công!')
 
-      //  Reset form
       setNewAccount({
         username: '',
         tenBS: '',
@@ -174,7 +172,6 @@ const AccountManagement = () => {
       })
       setShowAddForm(false)
 
-      // Reload danh sách tài khoản
       await fetchAccounts()
     } catch (error) {
       console.error('Lỗi khi thêm tài khoản:', error)
@@ -184,7 +181,6 @@ const AccountManagement = () => {
     }
   }
 
-  //  Hàm đình chỉ/kích hoạt
   const handleToggleActive = async (id) => {
     const account = accounts.find(acc => acc.id === id)
     const newStatus = !account.isActive
@@ -192,7 +188,6 @@ const AccountManagement = () => {
     try {
       await authService.updateAccountStatus(id, newStatus)
 
-      // Update local state
       setAccounts(accounts.map(account =>
         account.id === id
           ? { ...account, isActive: newStatus }

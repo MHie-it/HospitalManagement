@@ -29,9 +29,8 @@ const LichHenManagement = () => {
   const [selectedAppointment, setSelectedAppointment] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
-  const [filterPeriod, setFilterPeriod] = useState('all') // 'all', 'today', 'week', 'month'
+  const [filterPeriod, setFilterPeriod] = useState('all') 
 
-  // Load dữ liệu khi component mount
   useEffect(() => {
     fetchAppointments()
   }, [])
