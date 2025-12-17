@@ -366,7 +366,7 @@ const DoctorManagement = () => {
                                                                 variant="outline"
                                                                 size="sm"
                                                                 onClick={(e) => handleEditKhoaClick(khoa, e)}
-                                                                className="flex items-center gap-1"
+                                                                className="flex items-center gap-1 "
                                                             >
                                                                 <Edit className="w-4 h-4" />
                                                                 Sửa

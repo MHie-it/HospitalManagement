@@ -356,12 +356,12 @@ const MedicalDevicesManagement = () => {
               {/* Content */}
               <CardContent className="p-6 flex-1 overflow-y-auto min-h-0 hide-scrollbar">
                 {/* Loading state */}
-                {loading && (
+                {/* {loading && (
                   <div className="text-center py-12">
                     <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
                     <p className="text-gray-500 text-lg">Đang tải dữ liệu...</p>
                   </div>
-                )}
+                )} */}
 
                 {/* Thống kê */}
                 {!loading && (
@@ -499,8 +499,7 @@ const MedicalDevicesManagement = () => {
                       </CardContent>
                     </Card>
 
-                    {/* Bảng danh sách thiết bị */}
-                    {/* Danh sách thiết bị - Dạng Card Grid (không dùng row) */}
+                    {/* Bảng danh sách thiết bị */}                 
                     <Card className="border-2 border-gray-200 shadow-md">
                       <CardContent className="p-6">
                         {filteredDevices.length === 0 ? (
@@ -703,12 +702,12 @@ const MedicalDevicesManagement = () => {
       {/* Modal Form thêm/sửa thiết bị - Hiển thị đè lên trên cùng */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center  backdrop-blur-md  ">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto m-4 border-2 border-gray-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto m-4 border-2 border-gray-200 hide-scrollbar">
             {/* Header Modal */}
             <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 rounded-t-2xl flex justify-between items-center z-10">
               <div>
                 <h2 className="text-2xl font-bold">
-                  {editingDevice ? '✏️ Sửa thiết bị' : '➕ Thêm thiết bị mới'}
+                  {editingDevice ? 'Sửa thiết bị' : 'Thêm thiết bị mới'}
                 </h2>
                 <p className="text-sm text-blue-100 mt-1">
                   {editingDevice ? 'Cập nhật thông tin thiết bị' : 'Điền thông tin để thêm thiết bị mới'}
@@ -874,7 +873,7 @@ const MedicalDevicesManagement = () => {
                   Mô tả
                 </label>
                 <textarea
-                  className="w-full min-h-[100px] rounded-md border-2 border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
+                  className="w-full  rounded-md border-2 border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
                   placeholder="Nhập mô tả thiết bị (tùy chọn)"
                   value={formData.moTa}
                   onChange={(e) => setFormData({ ...formData, moTa: e.target.value })}

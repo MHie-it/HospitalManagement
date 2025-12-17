@@ -9,9 +9,6 @@ import { toast } from 'sonner'
 import { khoaService } from '@/services/khoaService'
 import { authService } from '@/services/authService'
 
-
-
-
 const AccountManagement = () => {
   const [accounts, setAccounts] = useState([])
   const [khoaList, setKhoaList] = useState([])
@@ -247,7 +244,6 @@ const AccountManagement = () => {
 
             <CardContent >
               {/* Form thêm tài khoản - Hiển thị/ẩn đơn giản (không dùng Dialog) */}
-
               {showAddForm && (
                 <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
                   <div className="flex justify-between items-center mb-4">
@@ -424,7 +420,7 @@ const AccountManagement = () => {
                       <Search className="w-4 h-4" />
                       Seach
                     </label>
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    {/* <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" /> */}
                     <Input
                       placeholder="Tìm kiếm "
                       value={searchTerm}
