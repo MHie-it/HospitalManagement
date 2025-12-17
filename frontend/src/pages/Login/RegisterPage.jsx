@@ -249,7 +249,7 @@ const RegisterPage = () => {
                 Đăng ký
               </Button>
 
-              <Button
+              {/* <Button
                 variant="gmail"
                 size="lg"
                 className="w-full mt-4 h-11 font-semibold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
@@ -258,7 +258,7 @@ const RegisterPage = () => {
               >
                 <MailIcon className="w-5 h-5" />
                 Đăng ký bằng Gmail
-              </Button>
+              </Button> */}
 
               <p className="text-center text-sm text-gray-600 mt-6">
                 Bạn đã có tài khoản?{' '}
