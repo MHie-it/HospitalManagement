@@ -85,6 +85,7 @@ const UserPage = () => {
   const [loadingConsultation, setLoadingConsultation] = useState(false);
   const [sendingQuestion, setSendingQuestion] = useState(false);
   const [khoaList, setKhoaList] = useState([]);
+  const [hoveredService, setHoveredService] = useState(null);
 
   // Thêm dữ liệu gói khám sau services array 
   const healthPackages = [
@@ -621,17 +622,62 @@ const UserPage = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {services.map((service) => {
               const IconComponent = service.icon;
+              const isBookingService = service.id === 1; // Service "Đặt lịch khám"
+              const isHovered = hoveredService === service.id;
+
               return (
                 <Card
                   key={service.id}
-                  className="group cursor-pointer border-2 hover:border-blue-300 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
-                  onClick={() => handleServiceClick(service.id)}
+                  className={`group cursor-pointer border-2 transition-all duration-300 ${
+                    isHovered && isBookingService ? 'border-blue-400 shadow-xl -translate-y-1' : 'hover:border-blue-300 hover:shadow-xl hover:-translate-y-1'
+                  } relative overflow-hidden`}
+                  onMouseEnter={() => isBookingService && setHoveredService(service.id)}
+                  onMouseLeave={() => setHoveredService(null)}
+                  onClick={() => {
+                    // Chỉ onClick nếu không phải service đặt lịch hoặc không đang hover
+                    if (!isBookingService || !isHovered) {
+                      handleServiceClick(service.id);
+                    }
+                  }}
                 >
-                  <CardContent className="p-4 sm:p-6 text-center">
-                    <div className={`w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br ${service.color} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                  <CardContent className="p-4 sm:p-6 text-center relative">
+                    {/* Icon */}
+                    <div className={`w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br ${service.color} flex items-center justify-center shadow-lg transition-transform duration-300 ${
+                      isHovered && isBookingService ? 'scale-110' : 'group-hover:scale-110'
+                    }`}>
                       <IconComponent className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
                     </div>
+
+                    {/* Nội dung chính */}
+                    {!(isBookingService && isHovered) && (
                     <p className="font-semibold text-gray-800 text-sm sm:text-base">{service.name}</p>
+                    )}
+
+                    {/* Hiển thị 2 button khi hover vào service đặt lịch */}
+                    {isBookingService && isHovered && (
+                      <div className="space-y-2 mt-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <Button
+                          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-md text-sm sm:text-base"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate('/dat-lich-kham');
+                          }}
+                        >
+                          <Calendar className="w-4 h-4 mr-2" />
+                          Đặt lịch khám
+                        </Button>
+                        <Button
+                          className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md text-sm sm:text-base"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate('/laysott');
+                          }}
+                        >
+                          <ClipboardList className="w-4 h-4 mr-2" />
+                          Lấy số thứ tự
+                        </Button>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               );

@@ -1,6 +1,6 @@
 import React from 'react'
 import { Button } from './button'
-import { LogOut } from 'lucide-react'
+import { BookPlus, CalendarCheck, HardDrive, HeartPulse, Hospital, House, LogOut, SquareUser } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router'
 import { authService } from '@/services/authService'
 import { toast } from 'sonner'
@@ -14,42 +14,53 @@ const Dashboard = () => {
         navigate('/')
     }
     const navItemClass = ({ isActive }) =>
-        `text-inherit no-underline w-full h-12 text-xl text-black p-5 flex items-center
-    hover:bg-blue-300 ${isActive ? 'bg-blue-300' : ''}`
+        `text-inherit no-underline  h-12 text-xl text-black p-5 flex items-center
+    hover:bg-blue-300  rounded-2xl mx-3 ${isActive ? 'bg-blue-300' : ''}`
     return (
-        <div className="h-full  bg-white w-full mt-0 p-0 shadow-xl  ">
+        <div className="h-full rounded-2xl my-6 mx-3  bg-white w-full  p-0 shadow-xl  ">
             <img src="./public/IMG/admin.jpg" alt="logo" className="p-0 m-0 h-50 w-50  mx-auto" />
 
-            <NavLink to="/admin" end className={navItemClass}>
+            <NavLink to="/admin" end className={navItemClass} >
+
+                <House className='mx-3 w-5 h-5' />
+
                 Home
             </NavLink>
 
+
+
             <NavLink to="/DoctorManagement" className={navItemClass}>
-                Quản lý khoa & bác sĩ
+                <Hospital className='mx-3 w-5 h-5' />
+                Khoa & bác sĩ
             </NavLink>
 
             <NavLink to="/AccountManagement" className={navItemClass}>
-                Quản lý tài khoản
+                <SquareUser className='mx-3 w-5 h-5' />
+                Tài khoản
             </NavLink>
 
             <NavLink to="/loaidv" className={navItemClass}>
-                Quản lý loại dịch vụ
+                <BookPlus className='mx-3 w-5 h-5' />
+                Loại dịch vụ
             </NavLink>
 
             <NavLink to="/ServiceManagement" className={navItemClass}>
-                Quản lý dịch vụ
+                <HeartPulse className='mx-3 w-5 h-5' />
+                Dịch vụ
             </NavLink>
 
             <NavLink to="/MedicalDevicesManagement" className={navItemClass}>
-                Quản lý thiết bị
+                <HardDrive className='mx-3 w-5 h-5' />
+                Thiết bị
             </NavLink>
 
             <NavLink to="/lichhen" className={navItemClass}>
-                Quản lý lịch hẹn
+                <CalendarCheck className='mx-3 w-5 h-5' />
+                Lịch hẹn
             </NavLink>
 
             <Button
-                className=" h-12 bg-red-500 text-white text-center mb-10 hover:bg-red-700 rounded-lg mt-20 justify-center flex mx-auto  "
+                className=" h-12 bg-red-500 text-white text-center  hover:bg-red-700 rounded-lg mt-10 justify-center flex mx-auto  "
                 onClick={handleLogout}
             >
                 <LogOut />

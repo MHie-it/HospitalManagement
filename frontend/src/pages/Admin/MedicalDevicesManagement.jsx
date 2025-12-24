@@ -328,7 +328,7 @@ const MedicalDevicesManagement = () => {
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <div className="p-6 h-full overflow-auto bg-gray-50">
+          <div className="p-6 h-full overflow-auto">
             {/* Card chính */}
             <Card className="h-full flex flex-col shadow-lg">
               {/* Header */}
@@ -702,9 +702,9 @@ const MedicalDevicesManagement = () => {
       {/* Modal Form thêm/sửa thiết bị - Hiển thị đè lên trên cùng */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center  backdrop-blur-md  ">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto m-4 border-2 border-gray-200 hide-scrollbar">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto m-4 hide-scrollbar">
             {/* Header Modal */}
-            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 rounded-t-2xl flex justify-between items-center z-10">
+            <div className="sticky top-0 bg-gradient-to-r bg-gradient-to-r bg-gradient-to-br from-teal-600 to-blue-600 to-indigo-600 text-white p-3 px-10 rounded-t-2xl flex justify-between items-center z-10">
               <div>
                 <h2 className="text-2xl font-bold">
                   {editingDevice ? 'Sửa thiết bị' : 'Thêm thiết bị mới'}
@@ -727,9 +727,8 @@ const MedicalDevicesManagement = () => {
             </div>
 
             {/* Form Content */}
-            <div className="p-6 space-y-6">
-              {/* Hàng 1: Tên và Mã thiết bị */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-3 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
                 <div>
                   <label className="text-sm font-semibold mb-2 block text-gray-700">
                     Tên thiết bị <span className="text-red-500">*</span>
@@ -754,8 +753,7 @@ const MedicalDevicesManagement = () => {
                 </div>
               </div>
 
-              {/* Hàng 2: Loại và Nhà sản xuất */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
                 <div>
                   <label className="text-sm font-semibold mb-2 block text-gray-700">
                     Loại thiết bị <span className="text-red-500">*</span>
@@ -785,7 +783,7 @@ const MedicalDevicesManagement = () => {
               </div>
 
               {/* Hàng 3: Các ngày */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
                 <div>
                   <label className="text-sm font-semibold mb-2 block text-gray-700">
                     Ngày mua <span className="text-red-500">*</span>
@@ -822,7 +820,7 @@ const MedicalDevicesManagement = () => {
               </div>
 
               {/* Hàng 4: Tình trạng, Khoa, Số lượng */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
                 <div>
                   <label className="text-sm font-semibold mb-2 block text-gray-700">
                     Tình trạng <span className="text-red-500">*</span>
@@ -868,7 +866,7 @@ const MedicalDevicesManagement = () => {
               </div>
 
               {/* Mô tả */}
-              <div>
+              <div className='mb-3'>
                 <label className="text-sm font-semibold mb-2 block text-gray-700">
                   Mô tả
                 </label>
@@ -881,8 +879,8 @@ const MedicalDevicesManagement = () => {
               </div>
 
               {/* Buttons */}
-              <div className="flex justify-end gap-3 pt-4 border-t">
-                <Button
+              <div className="flex justify-end gap-3 mb-3 ">
+                {/* <Button
                   variant="outline"
                   onClick={() => {
                     setShowForm(false)
@@ -891,7 +889,7 @@ const MedicalDevicesManagement = () => {
                   className="px-8 h-11"
                 >
                   Hủy
-                </Button>
+                </Button> */}
                 <Button
                   variant="gradient"
                   onClick={handleSaveDevice}

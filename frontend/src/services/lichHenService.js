@@ -19,5 +19,14 @@ export const lichHenService = {
     } catch (error) {
       throw error
     }
+  },
+
+  createSTT: async (data) => {
+    try {
+      const response = await api.post('/lichHen/createstt', data)
+      return response.data
+    } catch (error) {
+      throw error
+    }
   }
 }

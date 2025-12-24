@@ -16,6 +16,7 @@ import DoctorSchedule from "./pages/Doctor/DoctorSchedule";
 import DoctorHistory from "./pages/Doctor/DoctorHistory";
 import LichHenManagement from "./pages/Admin/LichHenManagement";
 import LoaiDichVuManagement from "./pages/Admin/LoaiDichVuManagement";
+import LaySoThuTu from "./pages/User/LaySoThuTu";
 
 
 function App() {
@@ -80,6 +81,11 @@ function App() {
         <Route 
           path="/lichhen" //duong dan
           element={<LichHenManagement/>}
+        />
+
+        <Route 
+          path="/laysott" //duong dan
+          element={<LaySoThuTu/>}
         />
 
         {/* doctor */}

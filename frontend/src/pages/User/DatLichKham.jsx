@@ -23,6 +23,7 @@ import { khoaService } from '@/services/khoaService';
 import { doctorService } from '@/services/doctorService';
 import { userService } from '@/services/userService';
 import { lichLamViecService } from '@/services/lichLamViecService';
+import { lichHenService } from '@/services/lichHenService';
 
 const DatLichKham = () => {
   const navigate = useNavigate();
@@ -42,9 +43,14 @@ const DatLichKham = () => {
   const [availableDates, setAvailableDates] = useState([]);
   const [loadingDates, setLoadingDates] = useState(false);
 
+  // Danh sách ca khám
+  const [caList, setCaList] = useState([]);
+  const [loadingCa, setLoadingCa] = useState(false);
+
   const [formData, setFormData] = useState({
     khoa: '',
     bacSi: '',
+    caLamViec: '',
     ngayHen: '',
     gioHen: '',
     moTa: ''
@@ -58,13 +64,34 @@ const DatLichKham = () => {
         const response = await khoaService.getAllKhoa();
         
         // API trả về array trực tiếp
+        let allKhoa = [];
         if (Array.isArray(response)) {
-          setKhoaList(response);
+          allKhoa = response;
         } else if (response.data && Array.isArray(response.data)) {
-          setKhoaList(response.data);
-        } else {
-          setKhoaList([]);
+          allKhoa = response.data;
         }
+        
+        // Filter chỉ lấy 3 khoa cụ thể theo tên
+        const targetKhoaNames = [
+          'Khoa Khám bệnh',
+          'Khoa Mắt (Nhãn khoa)',
+          'Khoa Tai Mũi Họng'
+        ];
+        
+        const filteredKhoa = allKhoa.filter(khoa => 
+          targetKhoaNames.some(targetName => 
+            khoa.tenKhoa && khoa.tenKhoa.trim() === targetName.trim()
+          )
+        );
+        
+        // Sắp xếp theo thứ tự mong muốn
+        const sortedKhoa = targetKhoaNames
+          .map(targetName => 
+            filteredKhoa.find(k => k.tenKhoa && k.tenKhoa.trim() === targetName.trim())
+          )
+          .filter(k => k !== undefined); // Loại bỏ undefined nếu không tìm thấy
+        
+        setKhoaList(sortedKhoa);
       } catch (error) {
         console.error('Error loading khoa list:', error);
         toast.error(error.message || 'Không thể tải danh sách khoa!');
@@ -109,6 +136,43 @@ const DatLichKham = () => {
 
     loadBacSiList();
   }, [formData.khoa]);
+
+  // Load danh sách ca làm việc (chỉ Sáng và Chiều)
+  useEffect(() => {
+    const loadCaList = async () => {
+      try {
+        setLoadingCa(true);
+        const response = await lichLamViecService.getAllCaLamViec();
+        
+        if (response.data && Array.isArray(response.data)) {
+          // Lọc chỉ lấy ca Sáng và Chiều, sắp xếp theo thứ tự
+          const filteredCa = response.data
+            .filter(ca => {
+              const caLam = ca.caLam || '';
+              return caLam.toLowerCase() === 'sang' || caLam.toLowerCase() === 'chieu';
+            })
+            .sort((a, b) => {
+              const order = { 'Sang': 1, 'Chieu': 2 };
+              const aCa = (a.caLam || '').toLowerCase();
+              const bCa = (b.caLam || '').toLowerCase();
+              return (order[aCa] || 99) - (order[bCa] || 99);
+            });
+          
+          setCaList(filteredCa);
+        } else {
+          setCaList([]);
+        }
+      } catch (error) {
+        console.error('Error loading ca list:', error);
+        toast.error('Không thể tải danh sách ca khám');
+        setCaList([]);
+      } finally {
+        setLoadingCa(false);
+      }
+    };
+
+    loadCaList();
+  }, []);
 
   // Tạo danh sách giờ hành chính (8:00 - 17:30) và ca tối (18:00 - 21:30, mỗi 30 phút)
   const generateGioHanhChinh = () => {
@@ -436,6 +500,7 @@ const DatLichKham = () => {
       ...formData,
       khoa: khoaId,
       bacSi: '', // Reset bác sĩ khi đổi khoa
+      caLamViec: '', // Reset ca khám
       ngayHen: '',
       gioHen: ''
     });
@@ -479,11 +544,6 @@ const DatLichKham = () => {
       return;
     }
 
-    if (!formData.bacSi) {
-      toast.error('Vui lòng chọn bác sĩ!');
-      return;
-    }
-
     if (!formData.ngayHen) {
       toast.error('Vui lòng chọn ngày hẹn!');
       return;
@@ -498,27 +558,6 @@ const DatLichKham = () => {
     if (selectedDate < today) {
       toast.error('Ngày hẹn không được trước ngày hiện tại!');
       return;
-    }
-
-    if (!formData.gioHen) {
-      toast.error('Vui lòng chọn giờ hẹn!');
-      return;
-    }
-
-    // Nếu chọn ngày hôm nay, kiểm tra giờ không được trước giờ hiện tại
-    if (formData.ngayHen === today.toISOString().split('T')[0]) {
-      const now = new Date();
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-      const [selectedHour, selectedMinute] = formData.gioHen.split(':').map(Number);
-      
-      const currentTimeInMinutes = currentHour * 60 + currentMinute;
-      const selectedTimeInMinutes = selectedHour * 60 + selectedMinute;
-      
-      if (selectedTimeInMinutes <= currentTimeInMinutes) {
-        toast.error('Giờ hẹn phải sau giờ hiện tại!');
-        return;
-      }
     }
 
     try {
@@ -540,25 +579,80 @@ const DatLichKham = () => {
         return;
       }
 
-      // Gọi API để đặt lịch
-      const appointmentData = {
-        userId: userId,
-        bacSiId: formData.bacSi,
-        ngayHen: formData.ngayHen,
-        gioHen: formData.gioHen,
-        dichVuIds: [], // Không có dịch vụ, để rỗng - backend sẽ tự tìm dịch vụ mặc định
-        moTa: formData.moTa || ''
-      };
+      // Nếu KHÔNG chọn bác sĩ: dùng createSTT (tự động chọn bác sĩ có ít lịch hẹn nhất)
+      if (!formData.bacSi) {
+        // Validation cho trường hợp này
+        if (!formData.caLamViec) {
+          toast.error('Vui lòng chọn ca khám!');
+          setLoading(false);
+          return;
+        }
 
-      const response = await userService.createAppointment(appointmentData);
-      
-      if (response.data) {
-        toast.success(response.message || 'Đặt lịch khám thành công!');
-      
-      // Chuyển về trang user sau 1.5 giây
-      setTimeout(() => {
-          navigate('/userpage');
-      }, 1500);
+        // Gọi API createSTT
+        const appointmentData = {
+          userId: userId,
+          ngayHen: formData.ngayHen,
+          caLamViecId: formData.caLamViec,
+          khoaId: formData.khoa, // Gửi khoaId để filter bác sĩ
+          moTa: formData.moTa || ''
+        };
+
+        const response = await lichHenService.createSTT(appointmentData);
+        
+        if (response.data) {
+          const soThuTu = response.soThuTu || response.data.soThuTu || 1;
+          toast.success(`Đặt lịch hẹn thành công! Số thứ tự của bạn: ${soThuTu}`);
+          
+          // Chuyển về trang user sau 1.5 giây
+          setTimeout(() => {
+            navigate('/userpage');
+          }, 1500);
+        }
+      } else {
+        // Nếu CÓ chọn bác sĩ: giữ nguyên logic cũ
+        if (!formData.gioHen) {
+          toast.error('Vui lòng chọn giờ hẹn!');
+          setLoading(false);
+          return;
+        }
+
+        // Nếu chọn ngày hôm nay, kiểm tra giờ không được trước giờ hiện tại
+        if (formData.ngayHen === today.toISOString().split('T')[0]) {
+          const now = new Date();
+          const currentHour = now.getHours();
+          const currentMinute = now.getMinutes();
+          const [selectedHour, selectedMinute] = formData.gioHen.split(':').map(Number);
+          
+          const currentTimeInMinutes = currentHour * 60 + currentMinute;
+          const selectedTimeInMinutes = selectedHour * 60 + selectedMinute;
+          
+          if (selectedTimeInMinutes <= currentTimeInMinutes) {
+            toast.error('Giờ hẹn phải sau giờ hiện tại!');
+            setLoading(false);
+            return;
+          }
+        }
+
+        // Gọi API để đặt lịch (logic cũ)
+        const appointmentData = {
+          userId: userId,
+          bacSiId: formData.bacSi,
+          ngayHen: formData.ngayHen,
+          gioHen: formData.gioHen,
+          dichVuIds: [],
+          moTa: formData.moTa || ''
+        };
+
+        const response = await userService.createAppointment(appointmentData);
+        
+        if (response.data) {
+          toast.success(response.message || 'Đặt lịch khám thành công!');
+        
+          // Chuyển về trang user sau 1.5 giây
+          setTimeout(() => {
+            navigate('/userpage');
+          }, 1500);
+        }
       }
     } catch (error) {
       console.error('Error creating appointment:', error);
@@ -630,22 +724,62 @@ const DatLichKham = () => {
                 </select>
               </div>
 
-              {/* Chọn Bác sĩ */}
+              {/* Chọn Ca khám (chỉ hiển thị khi không chọn bác sĩ) */}
+              {formData.khoa && !formData.bacSi && (
+                <div className="space-y-2">
+                  <Label htmlFor="caLamViec" className="flex items-center gap-2 text-base font-semibold">
+                    <Clock className="w-5 h-5 text-blue-600" />
+                    Chọn ca khám <span className="text-red-500">*</span>
+                  </Label>
+                  <select
+                    id="caLamViec"
+                    value={formData.caLamViec}
+                    onChange={(e) => setFormData({ ...formData, caLamViec: e.target.value })}
+                    className="flex h-11 w-full rounded-md border border-blue-200 bg-white px-3 py-2 text-sm shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required={!formData.bacSi}
+                    disabled={loadingCa}
+                  >
+                    <option value="">{loadingCa ? 'Đang tải...' : '-- Chọn ca khám --'}</option>
+                    {caList.map(ca => (
+                      <option key={ca._id} value={ca._id}>
+                        {ca.caLam === 'Sang' ? 'Ca Sáng' : ca.caLam === 'Chieu' ? 'Ca Chiều' : ca.caLam}
+                        {ca.gioBatDau && ca.gioKetThuc && ` (${ca.gioBatDau} - ${ca.gioKetThuc})`}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Chọn ca khám để hệ thống tự động phân bổ bác sĩ có ít lịch hẹn nhất và hiển thị số thứ tự
+                  </p>
+                </div>
+              )}
+
+              {/* Chọn Bác sĩ (optional - chỉ hiển thị khi có khoa) */}
               {formData.khoa && (
                 <div className="space-y-2">
                   <Label htmlFor="bacSi" className="flex items-center gap-2 text-base font-semibold">
                     <Stethoscope className="w-5 h-5 text-blue-600" />
-                    Chọn bác sĩ <span className="text-red-500">*</span>
+                    Chọn bác sĩ (tùy chọn)
+                    {formData.bacSi && <span className="text-red-500">*</span>}
                   </Label>
                   <select
                     id="bacSi"
                     value={formData.bacSi}
-                    onChange={(e) => setFormData({ ...formData, bacSi: e.target.value })}
+                    onChange={(e) => {
+                      const newBacSi = e.target.value;
+                      setFormData({ 
+                        ...formData, 
+                        bacSi: newBacSi,
+                        // Reset ca khám nếu chọn bác sĩ (vì sẽ dùng logic cũ)
+                        caLamViec: newBacSi ? '' : formData.caLamViec,
+                        // Reset các field phụ thuộc
+                        ngayHen: newBacSi ? formData.ngayHen : '',
+                        gioHen: ''
+                      });
+                    }}
                     className="flex h-11 w-full rounded-md border border-blue-200 bg-white px-3 py-2 text-sm shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
                     disabled={loading}
                   >
-                    <option value="">{loading ? 'Đang tải...' : '-- Chọn bác sĩ --'}</option>
+                    <option value="">-- Bỏ qua để tự động chọn bác sĩ --</option>
                     {bacSiList.length === 0 && !loading && (
                       <option value="" disabled>Không có bác sĩ nào trong khoa này</option>
                     )}
@@ -655,6 +789,11 @@ const DatLichKham = () => {
                       </option>
                     ))}
                   </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formData.bacSi 
+                      ? 'Bạn đã chọn bác sĩ, hệ thống sẽ đặt lịch với bác sĩ này'
+                      : 'Để trống để hệ thống tự động chọn bác sĩ có ít lịch hẹn nhất và hiển thị số thứ tự'}
+                  </p>
                 </div>
               )}
 
@@ -672,7 +811,7 @@ const DatLichKham = () => {
                   min={new Date().toISOString().split('T')[0]}
                   className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
                   required
-                  disabled={!formData.bacSi || loadingDates}
+                  disabled={loadingDates}
                 />
                 {formData.bacSi && (
                   <div className="mt-3">
@@ -744,8 +883,9 @@ const DatLichKham = () => {
                 )}
               </div>
 
-              {/* Giờ hẹn */}
-              <div className="space-y-2">
+              {/* Giờ hẹn (chỉ hiển thị khi chọn bác sĩ) */}
+              {formData.bacSi && formData.bacSi !== '' && (
+                <div className="space-y-2">
                 <Label htmlFor="gioHen" className="flex items-center gap-2 text-base font-semibold">
                   <Clock className="w-5 h-5 text-blue-600" />
                   Giờ hẹn <span className="text-red-500">*</span>
@@ -755,16 +895,18 @@ const DatLichKham = () => {
                   value={formData.gioHen}
                   onChange={(e) => setFormData({ ...formData, gioHen: e.target.value })}
                   className="flex h-11 w-full rounded-md border border-blue-200 bg-white px-3 py-2 text-sm shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                  disabled={loadingSchedule || !formData.bacSi || !formData.ngayHen || availableTimes.length === 0}
+                  required={!!formData.bacSi}
+                  disabled={loadingSchedule || (formData.bacSi && (!formData.ngayHen || availableTimes.length === 0))}
                 >
                   <option value="">
                     {loadingSchedule 
                       ? 'Đang tải lịch làm việc...' 
-                      : !formData.bacSi || !formData.ngayHen
-                      ? 'Vui lòng chọn bác sĩ và ngày trước'
-                      : availableTimes.length === 0
+                      : formData.bacSi && !formData.ngayHen
+                      ? 'Vui lòng chọn ngày trước'
+                      : formData.bacSi && availableTimes.length === 0
                       ? 'Bác sĩ không có lịch làm việc trong ngày này'
+                      : !formData.bacSi
+                      ? 'Chỉ cần chọn ca khám khi không chọn bác sĩ'
                       : '-- Chọn giờ --'}
                   </option>
                   {(() => {
@@ -796,12 +938,13 @@ const DatLichKham = () => {
                     return null;
                   })()}
                 </select>
-                {formData.bacSi && formData.ngayHen && availableTimes.length > 0 && (
+                {formData.ngayHen && availableTimes.length > 0 && (
                   <p className="text-xs text-gray-500 mt-1">
                     Các giờ khả dụng dựa trên lịch làm việc của bác sĩ
                   </p>
                 )}
-              </div>
+                </div>
+              )}
 
               {/* Mô tả */}
               <div className="space-y-2">

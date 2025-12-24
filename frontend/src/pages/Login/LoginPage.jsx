@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label'
 import { MailIcon, X, KeyRound } from 'lucide-react'
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { toast } from 'sonner'
+import { toast, Toaster } from 'sonner'
 import { authService } from '@/services/authService'
 
 const LoginPage = () => {
@@ -46,12 +46,10 @@ const LoginPage = () => {
         if (userType === 'User') {
           navigate("/userpage");
         } else if (userType === 'Doctor') {
-          navigate("/doctorhome");
+            navigate("/doctorhome");        
         } else if (userType === 'Admin') {
           navigate("/admin");
         }
-
-
       }
     } catch (error) {
       // Hiển thị lỗi từ server
@@ -212,7 +210,7 @@ const LoginPage = () => {
 
           {/* Modal Quên mật khẩu */}
           {showForgotPassword && (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
               <Card className="w-full max-w-md p-6 relative">
                 <button
                   onClick={() => {

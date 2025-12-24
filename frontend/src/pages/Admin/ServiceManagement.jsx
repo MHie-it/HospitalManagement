@@ -339,7 +339,7 @@ const ServiceManagement = () => {
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="bg-gray-50 border-b">
-                      <th className="p-3 text-left font-semibold text-sm text-gray-700">STT</th>
+                      {/* <th className="p-3 text-left font-semibold text-sm text-gray-700">STT</th> */}
                       <th className="p-3 text-left font-semibold text-sm text-gray-700">Tên dịch vụ</th>
                       <th className="p-3 text-left font-semibold text-sm text-gray-700">Mô tả</th>
                       <th className="p-3 text-left font-semibold text-sm text-gray-700">Giá tiền</th>
@@ -369,11 +369,11 @@ const ServiceManagement = () => {
                           key={service._id || service.id}
                           className="border-b hover:bg-gray-50 transition-colors"
                         >
-                          <td className="p-3 text-sm">{index + 1}</td>
+                          {/* <td className="p-3 text-sm">{index + 1}</td> */}
                           <td className="p-3">
                             <span className="font-medium text-gray-900">{service.tenDV}</span>
                           </td>
-                          <td className="p-3 text-sm text-gray-600 max-w-xs truncate" title={service.moTa}>
+                          <td className="p-3 text-sm text-gray-600 max-w-xsfont-medium" title={service.moTa}>
                             {service.moTa}
                           </td>
                           <td className="p-3 text-sm font-semibold text-blue-600">
@@ -381,7 +381,7 @@ const ServiceManagement = () => {
                           </td>
                           <td className="p-3 text-sm text-gray-600">{service.khoa}</td>
                           <td className="p-3">
-                            <span className="px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                            <span className="px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800  truncate ">
                               {service.loaiDV}
                             </span>
                           </td>
@@ -423,9 +423,9 @@ const ServiceManagement = () => {
       {/* Form thêm/sửa dịch vụ */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto m-4 border-2 border-gray-200 hide-scrollbar">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto hide-scrollbar">
             {/* Header Modal */}
-            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 rounded-t-2xl flex justify-between items-center z-10">
+            <div className="sticky top-0 bg-gradient-to-r bg-gradient-to-br from-teal-600 to-blue-600 to-indigo-600 text-white p-3 rounded-t-2xl flex justify-between items-center z-10">
               <h2 className="text-xl font-bold">
                 {editingService ? 'Sửa dịch vụ' : 'Thêm dịch vụ mới'}
               </h2>
@@ -451,7 +451,7 @@ const ServiceManagement = () => {
 
             {/* Form Content */}
             <div className="p-6 space-y-6 bg-gradient-to-br from-gray-50 to-blue-50">
-              <div>
+              <div className='mb-2'>
                 <label className="text-sm font-medium mb-2 block text-gray-700">
                   Tên dịch vụ <span className="text-red-500">*</span>
                 </label>
@@ -459,23 +459,23 @@ const ServiceManagement = () => {
                   placeholder="Nhập tên dịch vụ"
                   value={formData.tenDV}
                   onChange={(e) => setFormData({ ...formData, tenDV: e.target.value })}
-                  className="h-12 text-base"
+                  className="h-10 text-base"
                 />
               </div>
 
-              <div>
-                <label className="text-sm font-medium mb-2 block text-gray-700">
+              <div className='mb-2'>
+                <label className="text-sm font-medium  mb-2 block text-gray-700">
                   Mô tả <span className="text-red-500">*</span>
                 </label>
                 <textarea
-                  className="w-full min-h-[100px] px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-base"
+                  className="w-full h-20 p-6 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-300 focus:border-transparent resize-none text-base"
                   placeholder="Nhập mô tả dịch vụ"
                   value={formData.moTa}
                   onChange={(e) => setFormData({ ...formData, moTa: e.target.value })}
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 mb-2">
                 <div>
                   <label className="text-sm font-medium mb-2 block text-gray-700">
                     Giá tiền (VND) <span className="text-red-500">*</span>
@@ -485,7 +485,7 @@ const ServiceManagement = () => {
                     placeholder="Nhập giá tiền"
                     value={formData.giaTien}
                     onChange={(e) => setFormData({ ...formData, giaTien: e.target.value })}
-                    className="h-12 text-base"
+                    className="h-12 text-base focus:ring-gray-300 focus:border-transparent"
                   />
                 </div>
                 <div>
@@ -493,7 +493,7 @@ const ServiceManagement = () => {
                     Khoa <span className="text-red-500">*</span>
                   </label>
                   <select
-                    className="w-full h-12 rounded-lg border-2 border-gray-300 bg-transparent px-4 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full h-12 rounded-lg border-2 border-gray-300 bg-transparent px-4 text-base focus:outline-none focus:ring-4 focus:ring-gray-300 focus:border-transparent"
                     value={formData.Khoa}
                     onChange={(e) => {
                       console.log('Chọn khoa:', e.target.value)
@@ -510,12 +510,12 @@ const ServiceManagement = () => {
                 </div>
               </div>
 
-              <div>
+              <div className='mb-4'>
                 <label className="text-sm font-medium mb-2 block text-gray-700">
                   Loại dịch vụ <span className="text-red-500">*</span>
                 </label>
                 <select
-                  className="w-full h-12 rounded-lg border-2 border-gray-300 bg-transparent px-4 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full h-12 rounded-lg border-2 border-gray-300 bg-transparent px-4 text-base focus:outline-none focus:ring-4 focus:ring-gray-300 focus:border-transparent"
                   value={formData.LoaiDichVu}
                   onChange={(e) => {
                     console.log('Chọn loại dịch vụ:', e.target.value)
@@ -530,13 +530,24 @@ const ServiceManagement = () => {
                   ))}
                 </select>
               </div>
+
+              <div className='flex flex justify-end pr-2'>
+
+                <Button
+                  variant="gradient"
+                  className="h-12 rouder-2xl "
+                  onClick={handleSaveService}
+                >
+                  {editingService ? 'Cập nhật' : 'Thêm dịch vụ'}
+                </Button>
+              </div>
             </div>
 
             {/* Footer Modal */}
-            <div className="sticky bottom-0 bg-gray-50 border-t-2 border-gray-200 p-6 rounded-b-2xl flex gap-3">
+            {/* <div className="sticky bottom-0 bg-gray-50 border-t-2 bg-gradient-to-r bg-gradient-to-br from-teal-600 to-blue-600 to-indigo-600 p-3 rounded-b-2xl flex gap-3">
               <Button
                 variant="outline"
-                className="flex-1 h-12"
+                className="flex-1 h-12 "
                 onClick={() => {
                   setShowForm(false)
                   setEditingService(null)
@@ -553,12 +564,12 @@ const ServiceManagement = () => {
               </Button>
               <Button
                 variant="gradient"
-                className="flex-1 h-12"
+                className="flex-1 h-12 "
                 onClick={handleSaveService}
               >
                 {editingService ? 'Cập nhật' : 'Thêm dịch vụ'}
               </Button>
-            </div>
+            </div> */}
           </div>
         </div>
       )}

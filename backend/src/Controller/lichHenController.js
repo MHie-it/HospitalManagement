@@ -4,6 +4,7 @@ import User from "../Models/User.js";
 import LichLamViec from "../Models/LichLamViec.js";
 import BacSi from "../Models/BacSi.js";
 import DichVu from "../Models/DichVu.js";
+import CaLamViec from "../Models/CaLamViec.js"
 
 // Lấy danh sách lịch hẹn của người dùng
 export const getLichHenByUserId = async (request, response) => {
@@ -76,6 +77,7 @@ export const getAllLichHen = async (request, response) => {
                     }
                 }
             })
+            .populate('CaLamViec', 'caLam gioBatDau gioKetThuc')
             .populate('DichVu', 'tenDV giaTien')
             .select('-__v')
             .sort({ ngayHen: -1 });
@@ -386,6 +388,174 @@ export const updateLichHen = async (request, response) => {
         console.error(error);
         response.status(500).json({
             message: "Lỗi khi cập nhật lịch hẹn!",
+            error: error.message
+        });
+    }
+};
+
+
+export const createSTT = async (request, response) => {
+    try {
+        const {
+            userId,
+            ngayHen,  // Format: YYYY-MM-DD
+            caLamViecId,
+            khoaId, // Thêm khoaId
+            moTa
+        } = request.body;
+
+        // Validation
+        if (!userId || !ngayHen || !caLamViecId) {
+            return response.status(400).json({
+                message: "Vui lòng nhập đầy đủ thông tin (userId, ngayHen, caLamViecId)!"
+            });
+        }
+
+        // Kiểm tra user
+        const user = await User.findById(userId);
+        if (!user || !user.NguoiDung) {
+            return response.status(404).json({
+                message: "Không tìm thấy người dùng!"
+            });
+        }
+
+        // Kiểm tra ca làm việc
+        const caLamViec = await CaLamViec.findById(caLamViecId);
+        if (!caLamViec) {
+            return response.status(404).json({
+                message: "Không tìm thấy ca làm việc!"
+            });
+        }
+
+        // Parse ngày
+        const [year, month, day] = ngayHen.split('-').map(Number);
+        const ngayHenDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+        const startOfDay = new Date(ngayHenDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(ngayHenDate);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        // Tìm tất cả lịch làm việc có ca này trong ngày và populate Khoa
+        let lichLamViecList = await LichLamViec.find({
+            ngayLam: {
+                $gte: startOfDay,
+                $lt: endOfDay
+            },
+            CaLamViec: caLamViecId
+        }).populate({
+            path: 'BacSi',
+            select: 'tenBS isActive Khoa',
+            populate: {
+                path: 'Khoa',
+                select: 'tenKhoa _id'
+            }
+        });
+
+        // Filter theo khoa nếu có khoaId
+        if (khoaId) {
+            lichLamViecList = lichLamViecList.filter(llv => 
+                llv.BacSi && 
+                llv.BacSi.Khoa && 
+                llv.BacSi.Khoa._id.toString() === khoaId.toString()
+            );
+        }
+
+        if (lichLamViecList.length === 0) {
+            return response.status(400).json({
+                message: khoaId 
+                    ? "Không có bác sĩ nào có lịch làm việc trong khoa này cho ca này vào ngày này!" 
+                    : "Không có bác sĩ nào có lịch làm việc trong ca này vào ngày này!"
+            });
+        }
+
+        // Lọc chỉ các bác sĩ đang hoạt động
+        const activeLichLamViecList = lichLamViecList.filter(llv => 
+            llv.BacSi && llv.BacSi.isActive
+        );
+
+        if (activeLichLamViecList.length === 0) {
+            return response.status(400).json({
+                message: khoaId 
+                    ? "Không có bác sĩ nào đang hoạt động trong khoa này cho ca làm việc này!" 
+                    : "Không có bác sĩ nào đang hoạt động trong ca này!"
+            });
+        }
+
+        // Tính số thứ tự CHUNG cho tất cả lịch hẹn trong ngày + ca (KHÔNG phân biệt bác sĩ)
+        const countQuery = {
+            ngayHen: {
+                $gte: startOfDay,
+                $lt: endOfDay
+            },
+            CaLamViec: caLamViecId,
+            trangThai: { $ne: 'Đã hủy' }
+        };
+        const existingCount = await LichHen.countDocuments(countQuery);
+        const soThuTu = existingCount + 1;
+
+        // Chọn bác sĩ có ít lịch hẹn nhất trong ca đó để phân bổ
+        let selectedLichLamViec = activeLichLamViecList[0];
+        let minAppointments = Infinity;
+
+        for (const lichLamViec of activeLichLamViecList) {
+            const appointmentCount = await LichHen.countDocuments({
+                LichLamViec: lichLamViec._id,
+                ngayHen: {
+                    $gte: startOfDay,
+                    $lt: endOfDay
+                },
+                CaLamViec: caLamViecId,
+                trangThai: { $ne: 'Đã hủy' }
+            });
+
+            if (appointmentCount < minAppointments) {
+                minAppointments = appointmentCount;
+                selectedLichLamViec = lichLamViec;
+            }
+        }
+
+        // Tạo lịch hẹn với giờ mặc định của ca (hoặc giờ đầu ca)
+        const gioHen = caLamViec.gioBatDau || '08:00';
+        const ngayGioHen = new Date(`${ngayHen}T${gioHen}`);
+
+        const newLichHen = new LichHen({
+            NguoiDung: user.NguoiDung,
+            LichLamViec: selectedLichLamViec._id,
+            CaLamViec: caLamViecId,
+            ngayHen: ngayGioHen,
+            soThuTu: soThuTu,
+            DichVu: [],
+            moTa: moTa || '',
+            trangThai: 'Chưa xác nhận'
+        });
+
+        const savedLichHen = await newLichHen.save();
+
+        // Populate để trả về đầy đủ thông tin
+        const populatedLichHen = await LichHen.findById(savedLichHen._id)
+            .populate('NguoiDung', 'hoTen SDT email diaChi')
+            .populate({
+                path: 'LichLamViec',
+                populate: {
+                    path: 'BacSi',
+                    select: 'tenBS',
+                    populate: {
+                        path: 'Khoa',
+                        select: 'tenKhoa'
+                    }
+                }
+            })
+            .populate('CaLamViec', 'caLam gioBatDau gioKetThuc');
+
+        response.status(201).json({
+            message: "Đặt lịch hẹn thành công!",
+            data: populatedLichHen,
+            soThuTu: soThuTu
+        });
+    } catch (error) {
+        console.error('[createLichHenWithoutKhoa] Error:', error);
+        response.status(500).json({
+            message: "Lỗi khi đặt lịch hẹn!",
             error: error.message
         });
     }

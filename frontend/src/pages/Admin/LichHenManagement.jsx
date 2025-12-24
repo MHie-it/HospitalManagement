@@ -46,6 +46,7 @@ const LichHenManagement = () => {
       const mappedAppointments = appointmentsData.map(apt => ({
         _id: apt._id,
         id: apt._id,
+        soThuTu: apt.soThuTu || null,
         NguoiDung: apt.NguoiDung ? {
           hoTen: apt.NguoiDung.hoTen || '',
           soDienThoai: apt.NguoiDung.SDT || '',
@@ -59,6 +60,12 @@ const LichHenManagement = () => {
               tenKhoa: apt.LichLamViec.BacSi.Khoa.tenKhoa || ''
             } : null
           } : null
+        } : null,
+        CaLamViec: apt.CaLamViec ? {
+          _id: apt.CaLamViec._id,
+          caLam: apt.CaLamViec.caLam || '',
+          gioBatDau: apt.CaLamViec.gioBatDau || '',
+          gioKetThuc: apt.CaLamViec.gioKetThuc || ''
         } : null,
         ngayHen: apt.ngayHen ? new Date(apt.ngayHen) : new Date(),
         DichVu: apt.DichVu || [],
@@ -401,7 +408,7 @@ const LichHenManagement = () => {
                   <table className="w-full border-collapse">
                     <thead>
                       <tr className="bg-gray-50 border-b">
-                        <th className="p-3 text-left font-semibold text-sm text-gray-700">STT</th>
+                        <th className="p-3 text-left font-semibold text-sm text-gray-700">Số thứ tự</th>
                         <th className="p-3 text-left font-semibold text-sm text-gray-700">Bệnh nhân</th>
                         <th className="p-3 text-left font-semibold text-sm text-gray-700">Số điện thoại</th>
                         <th className="p-3 text-left font-semibold text-sm text-gray-700">Ngày hẹn</th>
@@ -432,7 +439,13 @@ const LichHenManagement = () => {
                       ) : (
                         filteredAppointments.map((appointment, index) => (
                           <tr key={appointment._id || appointment.id} className="border-b hover:bg-gray-50 transition-colors">
-                            <td className="p-3 text-sm">{index + 1}</td>
+                            <td className="p-3 text-sm">
+                              {appointment.soThuTu ? (
+                                <span className="font-semibold text-blue-600">{appointment.soThuTu}</span>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </td>
                             <td className="p-3">
                               <div className="font-medium text-gray-900">{appointment.NguoiDung?.hoTen}</div>
                             </td>
@@ -476,16 +489,16 @@ const LichHenManagement = () => {
       {/* Modal Chi tiết lịch hẹn */}
       {selectedAppointment && (
         <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-0 m-0"
           onClick={() => setSelectedAppointment(null)}
         >
           <Card 
-            className="relative w-full max-w-3xl max-h-[90vh] overflow-auto shadow-2xl border-0 hide-scrollbar"
+            className="relative w-full max-w-3xl max-h-[90vh] overflow-auto shadow-2xl border-0 hide-scrollbar p-0"
             onClick={(e) => e.stopPropagation()}
           >
-            <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-indigo-50  pt-0 pb-3 px-4 sticky top-0 z-10">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-2xl  font-bold text-gray-900 flex items-center gap-2">
+            <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-indigo-50  py-4 sticky top-0 z-10 ">
+              <div className="flex items-center justify-between top-0 p-0 m-0 h-8">
+                <CardTitle className="text-2xl  font-bold text-gray-900 flex items-center gap-2 p-0">
                   <div className="bg-blue-600 rounded-lg p-2">
                     <Calendar className="w-6 h-6 text-white" />
                   </div>
@@ -495,13 +508,13 @@ const LichHenManagement = () => {
                   variant="ghost"
                   size="icon"
                   onClick={() => setSelectedAppointment(null)}
-                  className="hover:bg-red-50 hover:text-red-600"
+                  className="hover:bg-red-50 hover:text-red-600 p-0"
                 >
                   <X className="w-5 h-5" />
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="p-6 space-y-6">
+            <CardContent className="p-3 space-y-6">
               {/* Thông tin bệnh nhân */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -529,7 +542,7 @@ const LichHenManagement = () => {
                     </p>
                     <p className="text-base font-semibold text-gray-900 break-all">{selectedAppointment.NguoiDung?.email || 'N/A'}</p>
                   </div>
-                  <div className="bg-white rounded-lg p-4 md:col-span-2">
+                  <div className="bg-white rounded-lg p-4 ">
                     <p className="text-sm text-gray-500 mb-1 flex items-center gap-1">
                       <MapPin className="w-4 h-4" />
                       Địa chỉ
@@ -565,6 +578,32 @@ const LichHenManagement = () => {
                     <p className="text-base font-semibold text-gray-900">{selectedAppointment.LichLamViec?.BacSi?.Khoa?.tenKhoa || 'N/A'}</p>
                   </div>
                   <div className="bg-white rounded-lg p-4">
+                    <p className="text-sm text-gray-500 mb-1">Số thứ tự</p>
+                    <p className="text-base font-semibold text-gray-900">
+                      {selectedAppointment.soThuTu ? (
+                        <span className="text-2xl font-bold text-blue-600">{selectedAppointment.soThuTu}</span>
+                      ) : (
+                        <span className="text-gray-400">Chưa có</span>
+                      )}
+                    </p>
+                  </div>
+                  {selectedAppointment.CaLamViec && (
+                    <div className="bg-white rounded-lg p-4">
+                      <p className="text-sm text-gray-500 mb-1">Ca khám</p>
+                      <p className="text-base font-semibold text-gray-900">
+                        {selectedAppointment.CaLamViec.caLam === 'Sang' ? 'Ca Sáng' : 
+                         selectedAppointment.CaLamViec.caLam === 'Chieu' ? 'Ca Chiều' : 
+                         selectedAppointment.CaLamViec.caLam === 'Toi' ? 'Ca Tối' : 
+                         selectedAppointment.CaLamViec.caLam}
+                        {selectedAppointment.CaLamViec.gioBatDau && selectedAppointment.CaLamViec.gioKetThuc && (
+                          <span className="text-gray-500 text-sm ml-2">
+                            ({selectedAppointment.CaLamViec.gioBatDau} - {selectedAppointment.CaLamViec.gioKetThuc})
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  )}
+                  <div className="bg-white rounded-lg p-4">
                     <p className="text-sm text-gray-500 mb-1">Dịch vụ</p>
                     <p className="text-base font-semibold text-gray-900">
                       {selectedAppointment.DichVu?.map(dv => dv.tenDV).join(', ') || 'Không có'}
@@ -591,14 +630,14 @@ const LichHenManagement = () => {
               )}
 
               {/* Actions */}
-              <div className="flex gap-3 pt-4 border-t">
-                <Button
+              <div className="flex gap-3 ">
+                {/* <Button
                   variant="outline"
                   className="flex-1 h-11"
                   onClick={() => setSelectedAppointment(null)}
                 >
                   Đóng
-                </Button>
+                </Button> */}
                 {selectedAppointment.trangThai === 'Chưa xác nhận' && (
                   <Button 
                     className="flex-1 h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"

@@ -176,7 +176,7 @@ const LoaiDichVuManagement = () => {
 
                 {/* Main Content */}
                 <div className="flex-1 flex flex-col min-w-0 overflow-hidden ">
-                    <div className="p-6 h-full overflow-auto bg-gray-50 hide-scrollbar" ref={scrollContainerRef}>
+                    <div className="p-6 h-full overflow-auto hide-scrollbar" ref={scrollContainerRef}>
                         {/* Header */}
                         <div className="mb-6">
                             <h1 className="text-3xl font-bold text-gray-800 mb-2">
@@ -189,7 +189,7 @@ const LoaiDichVuManagement = () => {
 
                         {/* Search và Add Button */}
                         <Card className="mb-6 border-2 border-gray-200 shadow-md">
-                            <CardContent className="p-4">
+                            <CardContent className="py-0 ">
                                 <div className="flex gap-4 items-center">
                                     <div className="flex-1 relative">
                                         <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
