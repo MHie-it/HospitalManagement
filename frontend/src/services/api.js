@@ -1,21 +1,21 @@
 import axios from 'axios';
 
-const BASE_URL = 
-  import.meta.env.MODE === 'development' ? 'http://localhost:5001/api' : '/api';
-// Tạo instance axios với cấu hình mặc định
-const api = axios.create({
-  baseURL: BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
+// const BASE_URL = 
+//   import.meta.env.MODE === 'development' ? 'http://localhost:5001/api' : '/api';
+// // Tạo instance axios với cấu hình mặc định
 // const api = axios.create({
-//   baseURL: 'http://localhost:5001/api',
+//   baseURL: BASE_URL,
 //   headers: {
 //     'Content-Type': 'application/json',
 //   },
 // });
+
+const api = axios.create({
+  baseURL: 'http://localhost:5001/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 // Interceptor để xử lý response
 api.interceptors.response.use(

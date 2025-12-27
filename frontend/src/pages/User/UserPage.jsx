@@ -844,7 +844,7 @@ const UserPage = () => {
                   </div>
                 </CardContent>
 
-                <CardFooter className="pt-0 pb-6 px-6">
+                {/* <CardFooter className="pt-0 pb-6 px-6">
                   <Button
                     className={`w-full bg-gradient-to-r ${pkg.color} hover:opacity-90 text-white shadow-lg`}
                     onClick={() => navigate('/dat-lich-kham')}
@@ -852,7 +852,7 @@ const UserPage = () => {
                     <Calendar className="w-4 h-4 mr-2" />
                     Đặt lịch ngay
                   </Button>
-                </CardFooter>
+                </CardFooter> */}
               </Card>
             ))}
           </div>

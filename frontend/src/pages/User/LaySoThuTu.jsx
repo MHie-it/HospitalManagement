@@ -24,7 +24,7 @@ const LaySoThuTu = () => {
   const [loadingCa, setLoadingCa] = useState(false)
   const [caList, setCaList] = useState([])
   const [bookingSuccess, setBookingSuccess] = useState(null) // {soThuTu, appointmentData}
-  const [defaultKhoaId, setDefaultKhoaId] = useState('Khoa Khám bệnh')
+  const [defaultKhoaId, setDefaultKhoaId] = useState(null)
 
   const [formData, setFormData] = useState({
     ngayHen: '',
@@ -85,11 +85,17 @@ const LaySoThuTu = () => {
 
         // Set khoa đầu tiên làm mặc định
         if (khoaList.length > 0) {
-          setDefaultKhoaId(khoaList[0]._id)
-        }
+        // Tìm khoa có tên "Khoa Khám bệnh" trước
+        const khoaKhamBenh = khoaList.find(khoa => 
+          khoa.tenKhoa && khoa.tenKhoa.trim() === 'Khoa Khám bệnh'
+        )
+        
+        const selectedKhoa = khoaKhamBenh 
+        setDefaultKhoaId(selectedKhoa._id)
+      }
       } catch (error) {
         console.error('Error loading default khoa:', error)
-        // Không hiển thị error để không làm phiền user, chỉ log
+       
       }
     }
 
